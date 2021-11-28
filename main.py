@@ -5,14 +5,20 @@ class App:
     def __init__(self):
         super().__init__()
         self.root = tk.Tk()
-        self.canvas = tk.Canvas(self.root, bg='white', width=800, height=600)
+        self.create_constants()
+        self.canvas = tk.Canvas(self.root, bg='white', width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
+        self.canvas.pack(fill='both', expand=True)  # make canvas resizeable automatically
+        self.root.bind('<Configure>', self.on_resize)
         self.canvas.pack()
         self.root.title('Object trajetory')
-        self.a = 'a'
+        self.draw_system()
+
+    def create_constants(self):
+        self.CANVAS_WIDTH = 800
+        self.CANVAS_HEIGHT = 600
         self.COORD_WIDTH = 500
         self.COORD_HEIGHT = 500
         self.COORD_PADDING = {'padx': 100, 'pady': 100}
-        self.draw_system()
 
     def draw_system(self):
         for i in range(self.COORD_WIDTH // 100):
