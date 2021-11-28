@@ -7,8 +7,6 @@ class App:
         self.root = tk.Tk()
         self.CANVAS_WIDTH = 850
         self.CANVAS_HEIGHT = 600
-        self.COORD_WIDTH = self.CANVAS_WIDTH
-        self.COORD_HEIGHT = self.CANVAS_HEIGHT - 200
         self.LABEL_DISTANCE = 100
         self.canvas = tk.Canvas(self.root, bg='white', width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
         self.canvas.pack(fill="both", expand=True)
@@ -18,25 +16,25 @@ class App:
         self.draw_system()
 
     def on_resize(self, event):
-        '''# TODO make option to refresh if user resized too fast, because it breaks :)
+        # TODO make option to refresh if user resized too fast, because it breaks :)
         labels_can_fit_x = (event.width - self.CANVAS_WIDTH) // self.LABEL_DISTANCE
         labels_can_fit_y = (event.height - self.CANVAS_HEIGHT) // self.LABEL_DISTANCE
         if event.width > self.CANVAS_WIDTH and labels_can_fit_x > 0:
             self.add_coord_label(self.labels[0][-1].winfo_x() + self.LABEL_DISTANCE,0,int(self.labels[0][-1].cget('text')) + 100)
-            for i in range(1, len(self.labels[0])):
-                self.draw_line(i * 100, 0, i * 100, event.height - 200, '#a0a3a1')
+            for i in range(0, len(self.labels[0])):
+                self.canvas.create_line(i * 100, 0, i * 100, event.height,fill='gray')
+            for i in range(0, len(self.labels[1])):
+                self.canvas.create_line(self.CANVAS_WIDTH, (i + 1) * 100, event.width, (i + 1) * 100, fill='gray')
             self.CANVAS_WIDTH = event.width
         if event.height > self.CANVAS_HEIGHT and labels_can_fit_y > 0:
             self.add_coord_label(0,self.labels[1][-1].winfo_y() + self.LABEL_DISTANCE,int(self.labels[1][-1].cget('text')) + 100)
-            for i in range(1, len(self.labels[1])):
-                self.draw_line(0, i * 100, event.width, i * 100, '#a0a3a1')
+            for i in range(0, len(self.labels[1])):
+                self.canvas.create_line(0,(i + 1) * 100,event.width,(i + 1) * 100,fill='gray')
+            for i in range(0, len(self.labels[0])):
+                self.canvas.create_line(i * 100, self.CANVAS_HEIGHT, i * 100, event.height, fill='gray')
             self.CANVAS_HEIGHT = event.height
-        if to_redraw:
-            self.redraw_grid()'''
 
     def add_coord_label(self, x, y, text):
-        #print('creating label at',x,y)
-        #print(x,y)
         label = tk.Label(self.canvas, text=text, bg='white',anchor='w')
         label.place(x=x,y=y)
         if y == 0:
@@ -46,12 +44,12 @@ class App:
 
     def draw_system(self):
         self.add_coord_label(0,0,'0')
-        for i in range(1,self.COORD_WIDTH // self.LABEL_DISTANCE + 1):
+        for i in range(1,self.CANVAS_WIDTH // self.LABEL_DISTANCE + 1):
             self.add_coord_label(x=i * 100 - 10,y=0,text=i * 100)
-            self.draw_line(i * 100,0,i * 100,self.COORD_HEIGHT,'#a0a3a1')
-        for i in range(1,self.COORD_HEIGHT // self.LABEL_DISTANCE + 1):
+            self.canvas.create_line(i * 100,0,i * 100,self.CANVAS_HEIGHT,fill='gray')
+        for i in range(1,self.CANVAS_HEIGHT // self.LABEL_DISTANCE + 1):
             self.add_coord_label(x=0,y=i * 100 - 10,text=i * 100)
-            self.draw_line(0,i * 100,self.COORD_WIDTH,i * 100,'#a0a3a1')
+            self.canvas.create_line(0,i * 100,self.CANVAS_WIDTH,i * 100,fill='gray')
         self.root.update()
 
     def draw_line(self, x1, y1, x2, y2, color):
