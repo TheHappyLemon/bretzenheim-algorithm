@@ -24,16 +24,20 @@ class App:
         # TODO make option to refresh if user resized too fast, because it breaks :)
         labels_can_fit_x = (event.width - self.CANVAS_WIDTH) // self.LABEL_DISTANCE
         labels_can_fit_y = (event.height - self.CANVAS_HEIGHT) // self.LABEL_DISTANCE
+        to_redraw = False
         if event.width > self.CANVAS_WIDTH and labels_can_fit_x > 0:
             self.add_coord_label(self.labels[0][-1].winfo_x() + self.LABEL_DISTANCE,0,int(self.labels[0][-1].cget('text')) + 100)
-            for i in range(0,len(self.labels[1])):
-                print(self.CANVAS_WIDTH,(i+1) * 100,event.width,(i+1) * 100)
-                #self.canvas.create_line(self.CANVAS_WIDTH,(i+1) * 100,event.width,(i+1) * 100)
-                self.draw_line(self.CANVAS_WIDTH,(i+1) * 100,event.width,(i+1) * 100,'#a0a3a1')
+            self.my_grid = tk.PhotoImage(width=event.width,height=event.height - 200)
+            self.canvas.create_image((event.width / 2, (event.height - 200) / 2), image=self.my_grid,
+                                     state="normal")
+            to_redraw = True
             self.CANVAS_WIDTH = event.width
         if event.height > self.CANVAS_HEIGHT and labels_can_fit_y > 0:
             self.add_coord_label(0,self.labels[1][-1].winfo_y() + self.LABEL_DISTANCE,int(self.labels[1][-1].cget('text')) + 100)
             self.CANVAS_HEIGHT = event.height
+            to_redraw = True
+        if to_redraw:
+            self.redraw_grid()
 
     def add_coord_label(self, x, y, text):
         #print('creating label at',x,y)
@@ -45,14 +49,23 @@ class App:
         else:
             self.labels[1].append(label)
 
+    def redraw_grid(self):
+        print(self.my_grid.width())
+        print(self.my_grid.height())
+        for i in range(1,len(self.labels[0])):
+            print(i * 100,0,i * 100, self.my_grid.height())
+            self.draw_line(i * 100,0,i * 100, self.my_grid.height(),'#a0a3a1')
+        for i in range(1,len(self.labels[1])):
+            self.draw_line(0,i * 100,self.my_grid.width(),i * 100,'#a0a3a1')
+
     def draw_system(self):
         self.add_coord_label(0,0,'0')
         for i in range(1,self.COORD_WIDTH // self.LABEL_DISTANCE + 1):
             self.add_coord_label(x=i * 100 - 10,y=0,text=i * 100)
+            print(i * 100,0,i * 100,self.COORD_HEIGHT)
             self.draw_line(i * 100,0,i * 100,self.COORD_HEIGHT,'#a0a3a1')
         for i in range(1,self.COORD_HEIGHT // self.LABEL_DISTANCE + 1):
             self.add_coord_label(x=0,y=i * 100 - 10,text=i * 100)
-            print(0,i * 100,self.COORD_WIDTH,i * 100)
             self.draw_line(0,i * 100,self.COORD_WIDTH,i * 100,'#a0a3a1')
         self.root.update()
 
@@ -78,7 +91,7 @@ class App:
                     y = y + ys
                 else:
                     p = p + 2 * dy
-                print('putting PX at',x,y)
+                #print('putting PX at',x,y)
                 self.my_grid.put(color,(x,y))
         else:
             p = 2 * dx - dy
@@ -89,7 +102,7 @@ class App:
                     x = x + xs
                 else:
                     p = p + 2 * dx
-                print('putting PX at',x,y)
+                #print('putting PX at',x,y)
                 self.my_grid.put(color,(x,y))
 
 
