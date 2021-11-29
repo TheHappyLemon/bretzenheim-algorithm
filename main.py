@@ -1,69 +1,81 @@
 import tkinter as tk
+from enum import Enum
 
+class Window(Enum):
+    MAIN = 0
+    SETTINGS = 1
+    AUTHOR = 2
 
 class App(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
         pad = 30
         font = ('*font', 10)
-        # window = tk.Toplevel(window)
         self.geometry('250x300')
         self.title('Main menu')
         self.resizable(False,False)
-        tmp_hold = tk.Button(master=self, text='Start', width=10, font=font)
-        tmp_hold.bind("<Button-1>", self.action_33)
-        tmp_hold.pack(pady=pad)
-        tmp_hold = tk.Button(master=self, text='Settings', width=10, font=font)
-        tmp_hold.bind("<Button-1>", self.open_settings)
-        tmp_hold.pack()
-        tmp_hold = tk.Button(master=self, text='Author', width=10, font=font)
-        tmp_hold.bind("<Button-1>", self.open_author)
-        tmp_hold.pack(pady=pad)
-        tmp_hold = tk.Button(master=self, text='Quit', width=10, font=font)
-        tmp_hold.bind("<Button-1>", self.quit)
-        tmp_hold.pack()
+        self.start_btn = tk.Button(master=self, text='Start', width=10, font=font)
+        self.start_btn.configure(command=self.action_33)
+        self.start_btn.pack(pady=pad)
+        self.stg_btn = tk.Button(master=self, text='Settings', width=10, font=font)
+        self.stg_btn.configure(command=self.open_settings)
+        self.stg_btn.pack()
+        self.author_btn = tk.Button(master=self, text='Author', width=10, font=font)
+        self.author_btn.configure(command=self.open_author)
+        self.author_btn.pack(pady=pad)
+        tmp = tk.Button(master=self, text='Quit', width=10, font=font)
+        tmp.configure(command=self.quit)
+        tmp.pack()
         
 
-    def action_33(self, event):
+    def action_33(self):
         self.withdraw()
-        self.main = tk.Toplevel(master=self)
+        self.drawing = tk.Toplevel(master=self)
+        self.drawing.bind('<Escape>', self.open_main)
+        self.drawing.protocol("WM_DELETE_WINDOW", self.quit)
+        self.drawing.focus_force()
         self.CANVAS_WIDTH = 850
         self.CANVAS_HEIGHT = 650
-        self.main.geometry(str(self.CANVAS_WIDTH)+'x'+str( self.CANVAS_HEIGHT))
+        self.drawing.geometry(str(self.CANVAS_WIDTH)+'x'+str( self.CANVAS_HEIGHT))
         self.LABEL_DISTANCE = 100
-        self.canvas = tk.Canvas(self.main, bg='white', width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
+        self.canvas = tk.Canvas(self.drawing, bg='white', width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
         self.canvas.pack(fill="both", expand=True)
         self.canvas.bind('<Configure>', self.on_resize)
         self.start_point = ()
-        self.drawing = False
+        self.is_drawing = False
         self.LINE_WIDTH = 0
         self.canvas.bind("<Button-1>", self.callback)
-        self.title('Object trajetory')
+        self.drawing.title('Object trajetory')
         self.labels = [[],[]]
         self.draw_system()
 
-    def open_settings(self,event):
+    def open_settings(self):
         print('2')
         pass
 
-    def open_author(self,event):
+    def open_author(self):
         print('3')
         pass
 
-    def quit(self,event):
-        print('4')
+    def open_main(self, event):
+        self.deiconify()
+        self.start_btn["state"] = tk.DISABLED
+
+    def quit(self, event=None):
+        self.destroy()
         pass
+
 
     def on_click(self, event):
         print(event)
 
     def callback(self, event):
-        if self.drawing:
+        if self.is_drawing:
             self.draw_line(self.start_point[0],self.start_point[1], event.x, event.y, '#ffffff')
-            self.drawing = False
+            self.is_drawing = False
         else:
             self.start_point = (event.x, event.y)
-            self.drawing = True
+            self.is_drawing = True
 
     def on_resize(self, event):
         # TODO make option to refresh if user resized too fast, because it breaks :)
