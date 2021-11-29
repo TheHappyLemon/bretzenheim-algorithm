@@ -1,47 +1,46 @@
 import tkinter as tk
 
 
-class App:
+class App(tk.Tk):
     def __init__(self):
-        super().__init__()
-        self.root = tk.Tk()
+        tk.Tk.__init__(self)
+        pad = 30
+        font = ('*font', 10)
+        # window = tk.Toplevel(window)
+        self.geometry('250x300')
+        self.title('Main menu')
+        self.resizable(False,False)
+        tmp_hold = tk.Button(master=self, text='Start', width=10, font=font)
+        tmp_hold.bind("<Button-1>", self.action_33)
+        tmp_hold.pack(pady=pad)
+        tmp_hold = tk.Button(master=self, text='Settings', width=10, font=font)
+        tmp_hold.bind("<Button-1>", self.open_settings)
+        tmp_hold.pack()
+        tmp_hold = tk.Button(master=self, text='Author', width=10, font=font)
+        tmp_hold.bind("<Button-1>", self.open_author)
+        tmp_hold.pack(pady=pad)
+        tmp_hold = tk.Button(master=self, text='Quit', width=10, font=font)
+        tmp_hold.bind("<Button-1>", self.quit)
+        tmp_hold.pack()
+        
+
+    def action_33(self, event):
+        self.withdraw()
+        self.main = tk.Toplevel(master=self)
         self.CANVAS_WIDTH = 850
         self.CANVAS_HEIGHT = 650
+        self.main.geometry(str(self.CANVAS_WIDTH)+'x'+str( self.CANVAS_HEIGHT))
         self.LABEL_DISTANCE = 100
-        self.canvas = tk.Canvas(self.root, bg='white', width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
+        self.canvas = tk.Canvas(self.main, bg='white', width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
         self.canvas.pack(fill="both", expand=True)
         self.canvas.bind('<Configure>', self.on_resize)
         self.start_point = ()
         self.drawing = False
         self.LINE_WIDTH = 0
         self.canvas.bind("<Button-1>", self.callback)
-        self.root.title('Object trajetory')
+        self.title('Object trajetory')
         self.labels = [[],[]]
-        #self.draw_system()
-        self.create_main_window()
-
-    def create_main_window(self):
-        pad = 30
-        font = ('*font',10)
-        self.main_window = tk.Toplevel(self.root)
-        self.main_window.geometry('250x300')
-        self.main_window.title('Main menu')
-        tmp_hold = tk.Button(master=self.main_window,text='Start',width = 10,font=font)
-        tmp_hold.bind("<Button-1>",self.start)
-        tmp_hold.pack(pady=pad)
-        tmp_hold = tk.Button(master=self.main_window, text='Settings', width=10,font=font)
-        tmp_hold.bind("<Button-1>", self.open_settings)
-        tmp_hold.pack()
-        tmp_hold = tk.Button(master=self.main_window, text='Author', width=10,font=font)
-        tmp_hold.bind("<Button-1>", self.open_author)
-        tmp_hold.pack(pady=pad)
-        tmp_hold = tk.Button(master=self.main_window, text='Quit', width=10, font=font)
-        tmp_hold.bind("<Button-1>", self.quit)
-        tmp_hold.pack()
-
-    def start(self, event):
-        print('1')
-        pass
+        self.draw_system()
 
     def open_settings(self,event):
         print('2')
@@ -74,7 +73,7 @@ class App:
         if event.width > self.CANVAS_WIDTH and labels_can_fit_x > 0:
             for i in range(labels_can_fit_x):
                 self.add_coord_label(self.labels[0][-1].winfo_x() + self.LABEL_DISTANCE, 0, int(self.labels[0][-1].cget('text')) + 100)
-                self.root.update()
+                self.main.update()
             for i in range(labels_can_fit_x):
                 delta = (i + len(self.labels[0]) - labels_can_fit_x) * 100
                 self.canvas.create_line(delta, 0, delta, event.height, fill='light gray')
@@ -84,7 +83,7 @@ class App:
         if event.height > self.CANVAS_HEIGHT and labels_can_fit_y > 0:
             for i in range(labels_can_fit_y):
                 self.add_coord_label(0, self.labels[1][-1].winfo_y() + self.LABEL_DISTANCE, int(self.labels[1][-1].cget('text')) + 100)
-                self.root.update()
+                self.main.update()
             for i in range(labels_can_fit_y):
                 delta = (i + len(self.labels[1]) - labels_can_fit_y + 1) * 100
                 self.canvas.create_line(0, delta, event.width, delta, fill='light gray')
@@ -148,4 +147,4 @@ class App:
 
 if __name__ == '__main__':
     app = App()
-    app.root.mainloop()
+    app.mainloop()
