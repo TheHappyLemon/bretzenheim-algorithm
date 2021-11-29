@@ -17,7 +17,43 @@ class App:
         self.canvas.bind("<Button-1>", self.callback)
         self.root.title('Object trajetory')
         self.labels = [[],[]]
-        self.draw_system()
+        #self.draw_system()
+        self.create_main_window()
+
+    def create_main_window(self):
+        pad = 30
+        font = ('*font',10)
+        self.main_window = tk.Toplevel(self.root)
+        self.main_window.geometry('250x300')
+        self.main_window.title('Main menu')
+        tmp_hold = tk.Button(master=self.main_window,text='Start',width = 10,font=font)
+        tmp_hold.bind("<Button-1>",self.start)
+        tmp_hold.pack(pady=pad)
+        tmp_hold = tk.Button(master=self.main_window, text='Settings', width=10,font=font)
+        tmp_hold.bind("<Button-1>", self.open_settings)
+        tmp_hold.pack()
+        tmp_hold = tk.Button(master=self.main_window, text='Author', width=10,font=font)
+        tmp_hold.bind("<Button-1>", self.open_author)
+        tmp_hold.pack(pady=pad)
+        tmp_hold = tk.Button(master=self.main_window, text='Quit', width=10, font=font)
+        tmp_hold.bind("<Button-1>", self.quit)
+        tmp_hold.pack()
+
+    def start(self, event):
+        print('1')
+        pass
+
+    def open_settings(self,event):
+        print('2')
+        pass
+
+    def open_author(self,event):
+        print('3')
+        pass
+
+    def quit(self,event):
+        print('4')
+        pass
 
     def on_click(self, event):
         print(event)
