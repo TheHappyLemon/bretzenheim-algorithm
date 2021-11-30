@@ -1,8 +1,9 @@
 import tkinter as tk
+from tkinter import colorchooser
 from enum import Enum
 
 class Window(Enum):
-    MAIN = 0
+    DRAWING = 0
     SETTINGS = 1
     AUTHOR = 2
 
@@ -10,26 +11,29 @@ class App(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
         pad = 30
-        font = ('*font', 10)
+        self.FONT = ('*font', 10)
         self.geometry('250x300')
         self.title('Main menu')
         self.resizable(False,False)
-        self.start_btn = tk.Button(master=self, text='Start', width=10, font=font)
+        self.start_btn = tk.Button(master=self, text='Start', width=10, font=self.FONT)
         self.start_btn.configure(command=self.action_33)
         self.start_btn.pack(pady=pad)
-        self.stg_btn = tk.Button(master=self, text='Settings', width=10, font=font)
+        self.stg_btn = tk.Button(master=self, text='Settings', width=10, font=self.FONT)
         self.stg_btn.configure(command=self.open_settings)
         self.stg_btn.pack()
-        self.author_btn = tk.Button(master=self, text='Author', width=10, font=font)
+        self.author_btn = tk.Button(master=self, text='Author', width=10, font=self.FONT)
         self.author_btn.configure(command=self.open_author)
         self.author_btn.pack(pady=pad)
-        tmp = tk.Button(master=self, text='Quit', width=10, font=font)
+        self.main_btns = [self.start_btn, self.stg_btn, self.author_btn]
+        tmp = tk.Button(master=self, text='Quit', width=10, font=self.FONT)
         tmp.configure(command=self.quit)
         tmp.pack()
+        self.max_gay = []
         
 
     def action_33(self):
         self.withdraw()
+        self.cur_window = Window.DRAWING
         self.drawing = tk.Toplevel(master=self)
         self.drawing.bind('<Escape>', self.open_main)
         self.drawing.protocol("WM_DELETE_WINDOW", self.quit)
@@ -49,17 +53,77 @@ class App(tk.Tk):
         self.labels = [[],[]]
         self.draw_system()
 
+    def pick_color(self):
+        colors = colorchooser.askcolor(title="Choose a fancy color!")
+        print(colors[1])
+
     def open_settings(self):
-        print('2')
-        pass
+        self.withdraw()
+        self.cur_window = Window.SETTINGS
+        self.settings = tk.Toplevel(master=self)
+        self.settings.geometry('300x300')
+        self.settings.resizable(False, False)
+        self.settings.protocol("WM_DELETE_WINDOW", self.quit)
+        tmp_hold = tk.Button(master=self.settings, text="Pick line's colour", font=self.FONT)
+        tmp_hold.configure(command=self.pick_color)
+        tmp_hold.pack(pady=30)
+        tmp_hold = tk.Spinbox(master=self.settings,from_=0, to=10,font=self.FONT)
+        tmp_hold.delete(0,'end')
+        tmp_hold.insert(0,'Line`s width in pixels')
+        tmp_hold.pack()
+        tk.Label(master=self.settings, text="Resize window:", font=self.FONT).pack(pady=30)
+        frame = tk.Frame(master=self.settings)
+        frame.pack()
+        tk.Label(master=frame, text="width  (0 - "+str(self.winfo_screenwidth())+")", padx=5,
+                 font=self.FONT).grid(row=0,column=0)
+        tk.Label(master=frame, text="height (0 - "+str(self.winfo_screenheight())+")", padx=5,
+                 font=self.FONT).grid(row=1,column=0)
+        self.entr_W = tk.Entry(master=frame, validate="key",
+                               validatecommand=(self.settings.register(self.validate_width), "%P"), font=self.FONT)
+        self.entr_W.grid(row=0,column=1)
+        self.entr_H = tk.Entry(master=frame, validate='key',
+                               validatecommand=(self.settings.register(self.validate_height), "%P"), font=self.FONT)
+        self.entr_H.grid(row=1, column=1)
+
+
+    def validate_width(self, value):
+        # Checks if entered num is a num and less that screen width
+        try:
+            value = int(value)
+            if value > 0 and value <= self.winfo_screenwidth():
+                return True
+            self.settings.bell()
+            return False
+        except ValueError:
+            if value == '':
+                return True
+            self.settings.bell()
+            return False
+
+    def validate_height(self, value):
+        # Checks if entered num is a num and less that screen height
+        try:
+            value = int(value)
+            if value > 0 and value <= self.winfo_screenheight():
+                return True
+            self.settings.bell()
+            return False
+        except ValueError:
+            if value == '':
+                return True
+            self.settings.bell()
+            return False
+
+
 
     def open_author(self):
         print('3')
         pass
 
     def open_main(self, event):
+        print(self.cur_window.value)
+        self.main_btns[self.cur_window.value]["state"] = tk.DISABLED
         self.deiconify()
-        self.start_btn["state"] = tk.DISABLED
 
     def quit(self, event=None):
         self.destroy()
@@ -70,6 +134,7 @@ class App(tk.Tk):
         print(event)
 
     def callback(self, event):
+        self.canvas.delete()
         if self.is_drawing:
             self.draw_line(self.start_point[0],self.start_point[1], event.x, event.y, '#ffffff')
             self.is_drawing = False
@@ -80,22 +145,25 @@ class App(tk.Tk):
     def on_resize(self, event):
         # TODO make option to refresh if user resized too fast, because it breaks :)
         # DONT TOUCH THIS PART ANYMORE IT IS AWFUL, IT IS DISGUSTING
+        for gay in self.max_gay:
+            print(gay)
+            self.canvas.delete(gay)
         labels_can_fit_x = (event.width - self.CANVAS_WIDTH) // self.LABEL_DISTANCE
         labels_can_fit_y = (event.height - self.CANVAS_HEIGHT) // self.LABEL_DISTANCE
         if event.width > self.CANVAS_WIDTH and labels_can_fit_x > 0:
             for i in range(labels_can_fit_x):
                 self.add_coord_label(self.labels[0][-1].winfo_x() + self.LABEL_DISTANCE, 0, int(self.labels[0][-1].cget('text')) + 100)
-                self.main.update()
+                self.update()
             for i in range(labels_can_fit_x):
                 delta = (i + len(self.labels[0]) - labels_can_fit_x) * 100
-                self.canvas.create_line(delta, 0, delta, event.height, fill='light gray')
+                print(self.canvas.create_line(delta, 0, delta, event.height, fill='light gray'))
             for i in range(0, len(self.labels[1])):
                 self.canvas.create_line(self.CANVAS_WIDTH, (i + 1) * 100, event.width, (i + 1) * 100, fill='light gray')
             self.CANVAS_WIDTH = event.width
         if event.height > self.CANVAS_HEIGHT and labels_can_fit_y > 0:
             for i in range(labels_can_fit_y):
                 self.add_coord_label(0, self.labels[1][-1].winfo_y() + self.LABEL_DISTANCE, int(self.labels[1][-1].cget('text')) + 100)
-                self.main.update()
+                self.update()
             for i in range(labels_can_fit_y):
                 delta = (i + len(self.labels[1]) - labels_can_fit_y + 1) * 100
                 self.canvas.create_line(0, delta, event.width, delta, fill='light gray')
@@ -144,7 +212,7 @@ class App(tk.Tk):
                     y = y + ys
                 else:
                     p = p + 2 * dy
-                self.canvas.create_rectangle(x, y, x , y + self.LINE_WIDTH, outline='red')
+                self.max_gay.append(self.canvas.create_rectangle(x, y, x , y + self.LINE_WIDTH, outline='red'))
         else:
             p = 2 * dx - dy
             while y != y2:
@@ -154,7 +222,7 @@ class App(tk.Tk):
                     x = x + xs
                 else:
                     p = p + 2 * dx
-                self.canvas.create_rectangle(x, y, x + self.LINE_WIDTH , y, outline='blue')
+                self.max_gay.append(self.canvas.create_rectangle(x, y, x + self.LINE_WIDTH , y, outline='blue'))
 
 
 if __name__ == '__main__':
