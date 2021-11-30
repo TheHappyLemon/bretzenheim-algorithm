@@ -73,7 +73,7 @@ class App(tk.Tk):
         frame.pack()
         tk.Label(master=frame, text="Line`s width in pixels", padx=5,
                  font=self.FONT).grid(row=0, column=0)
-        self.spinbox = tk.Spinbox(master=frame,from_=0, to=50,font=self.FONT)
+        self.spinbox = tk.Spinbox(master=frame,from_=1,to=50,validate="key", validatecommand=(self.settings.register(self.validate), "%P", 0, 50), font=self.FONT)
         self.spinbox.grid(row=0,column=1)
         tk.Label(master=self.settings, text="Resize window:", font=self.FONT).pack(pady=30)
         frame = tk.Frame(master=self.settings)
@@ -82,41 +82,27 @@ class App(tk.Tk):
                  font=self.FONT).grid(row=0,column=0)
         tk.Label(master=frame, text="height (0 - "+str(self.winfo_screenheight())+")", padx=5,
                  font=self.FONT).grid(row=1,column=0)
-        self.entr_W = tk.Entry(master=frame, validate="key",
-                               validatecommand=(self.settings.register(self.validate_width), "%P"), font=self.FONT)
+        self.entr_W = tk.Entry(master=frame, validate="key", validatecommand=(self.settings.register(self.validate), "%P", 1, self.winfo_screenwidth()), font=self.FONT)
         self.entr_W.grid(row=0,column=1)
-        self.entr_H = tk.Entry(master=frame, validate='key',
-                               validatecommand=(self.settings.register(self.validate_height), "%P"), font=self.FONT)
+        self.entr_H = tk.Entry(master=frame, validate='key', validatecommand=(self.settings.register(self.validate), "%P", 1, self.winfo_screenheight()), font=self.FONT)
         self.entr_H.grid(row=1, column=1)
 
 
-    def validate_width(self, value):
-        # Checks if entered num is a num and less that screen width
+    def validate(self, value, min_value, max_value):
+        # Checks if entered num is a num and less than given value
         try:
             value = int(value)
-            if value > 0 and value <= self.winfo_screenwidth():
+            if value >= int(min_value) and value <= int(max_value):
                 return True
             self.settings.bell()
             return False
-        except ValueError:
+        except:
             if value == '':
                 return True
             self.settings.bell()
             return False
 
-    def validate_height(self, value):
-        # Checks if entered num is a num and less that screen height
-        try:
-            value = int(value)
-            if value > 0 and value <= self.winfo_screenheight():
-                return True
-            self.settings.bell()
-            return False
-        except ValueError:
-            if value == '':
-                return True
-            self.settings.bell()
-            return False
+
 
 
 
