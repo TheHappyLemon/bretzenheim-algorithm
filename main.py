@@ -28,7 +28,6 @@ class App(tk.Tk):
         tmp = tk.Button(master=self, text='Quit', width=10, font=self.FONT)
         tmp.configure(command=self.quit)
         tmp.pack()
-        self.max_gay = []
         
 
     def action_33(self):
@@ -51,10 +50,13 @@ class App(tk.Tk):
         self.canvas.bind("<Button-1>", self.callback)
         self.drawing.title('Object trajetory')
         self.labels = [[],[]]
+        self.pixels = []
         self.draw_system()
 
     def pick_color(self):
+        self.pck_btn["state"] = tk.DISABLED
         colors = colorchooser.askcolor(title="Choose a fancy color!")
+        self.pck_btn["state"] = tk.NORMAL
         print(colors[1])
 
     def open_settings(self):
@@ -64,13 +66,15 @@ class App(tk.Tk):
         self.settings.geometry('300x300')
         self.settings.resizable(False, False)
         self.settings.protocol("WM_DELETE_WINDOW", self.quit)
-        tmp_hold = tk.Button(master=self.settings, text="Pick line's colour", font=self.FONT)
-        tmp_hold.configure(command=self.pick_color)
-        tmp_hold.pack(pady=30)
-        tmp_hold = tk.Spinbox(master=self.settings,from_=0, to=10,font=self.FONT)
-        tmp_hold.delete(0,'end')
-        tmp_hold.insert(0,'Line`s width in pixels')
-        tmp_hold.pack()
+        self.pck_btn = tk.Button(master=self.settings, text="Pick line's colour", font=self.FONT)
+        self.pck_btn.configure(command=self.pick_color)
+        self.pck_btn.pack(pady=30)
+        frame = tk.Frame(master=self.settings)
+        frame.pack()
+        tk.Label(master=frame, text="Line`s width in pixels", padx=5,
+                 font=self.FONT).grid(row=0, column=0)
+        self.spinbox = tk.Spinbox(master=frame,from_=0, to=50,font=self.FONT)
+        self.spinbox.grid(row=0,column=1)
         tk.Label(master=self.settings, text="Resize window:", font=self.FONT).pack(pady=30)
         frame = tk.Frame(master=self.settings)
         frame.pack()
@@ -145,9 +149,11 @@ class App(tk.Tk):
     def on_resize(self, event):
         # TODO make option to refresh if user resized too fast, because it breaks :)
         # DONT TOUCH THIS PART ANYMORE IT IS AWFUL, IT IS DISGUSTING
-        for gay in self.max_gay:
-            print(gay)
-            self.canvas.delete(gay)
+        for px in self.pixels:
+            #that is just for test to see whether I can delete drawn lines
+            self.canvas.delete(px)
+            self.pixels.remove(px)
+        print(len(self.pixels))
         labels_can_fit_x = (event.width - self.CANVAS_WIDTH) // self.LABEL_DISTANCE
         labels_can_fit_y = (event.height - self.CANVAS_HEIGHT) // self.LABEL_DISTANCE
         if event.width > self.CANVAS_WIDTH and labels_can_fit_x > 0:
@@ -212,7 +218,7 @@ class App(tk.Tk):
                     y = y + ys
                 else:
                     p = p + 2 * dy
-                self.max_gay.append(self.canvas.create_rectangle(x, y, x , y + self.LINE_WIDTH, outline='red'))
+                self.pixels.append(self.canvas.create_rectangle(x, y, x , y + self.LINE_WIDTH, outline='red'))
         else:
             p = 2 * dx - dy
             while y != y2:
@@ -222,7 +228,7 @@ class App(tk.Tk):
                     x = x + xs
                 else:
                     p = p + 2 * dx
-                self.max_gay.append(self.canvas.create_rectangle(x, y, x + self.LINE_WIDTH , y, outline='blue'))
+                self.pixels.append(self.canvas.create_rectangle(x, y, x + self.LINE_WIDTH , y, outline='blue'))
 
 
 if __name__ == '__main__':
