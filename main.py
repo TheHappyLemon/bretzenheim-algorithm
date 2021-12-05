@@ -24,7 +24,9 @@ class App(tk.Tk):
         self.author_btn = tk.Button(master=self, text='Author', width=10, font=self.FONT)
         self.author_btn.configure(command=self.open_author)
         self.author_btn.pack(pady=pad)
-        self.main_btns = [self.start_btn, self.stg_btn, self.author_btn]
+        self.windows = [None, None, None] # list to store all the windows in order to close them with ESC button
+        self.CANVAS_WIDTH = 850
+        self.CANVAS_HEIGHT = 650
         tmp = tk.Button(master=self, text='Quit', width=10, font=self.FONT)
         tmp.configure(command=self.quit)
         tmp.pack()
@@ -34,11 +36,11 @@ class App(tk.Tk):
         self.withdraw()
         self.cur_window = Window.DRAWING
         self.drawing = tk.Toplevel(master=self)
+        self.drawing.focus_force()
+        self.windows[0] = self.drawing
         self.drawing.bind('<Escape>', self.open_main)
         self.drawing.protocol("WM_DELETE_WINDOW", self.quit)
         self.drawing.focus_force()
-        self.CANVAS_WIDTH = 850
-        self.CANVAS_HEIGHT = 650
         self.drawing.geometry(str(self.CANVAS_WIDTH)+'x'+str( self.CANVAS_HEIGHT))
         self.LABEL_DISTANCE = 100
         self.canvas = tk.Canvas(self.drawing, bg='white', width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
@@ -47,72 +49,110 @@ class App(tk.Tk):
         self.start_point = ()
         self.is_drawing = False
         self.LINE_WIDTH = 0
+        self.OUTLINE = 'black'
         self.canvas.bind("<Button-1>", self.callback)
         self.drawing.title('Object trajetory')
         self.labels = [[],[]]
         self.pixels = []
         self.draw_system()
+        self.bind_tree(self.drawing, '<Escape>', self.open_main)
 
-    def pick_color(self):
+    def pick_color(self) -> str:
+        #  Returns none if window was closed using X
         self.pck_btn["state"] = tk.DISABLED
         colors = colorchooser.askcolor(title="Choose a fancy color!")
         self.pck_btn["state"] = tk.NORMAL
-        print(colors[1])
+        if colors[1] != None:
+            self.OUTLINE = colors[1]
+        else:
+            self.OUTLINE = 'black'
+
+    def quit_stg(self):
+        self.deiconify()
+
+    def bind_tree(self, widget, event, call):
+        # Function to recursively bind ESC event (to open main window)
+        # to every single widget in a widget
+        for child in widget.children.values():
+            if len(child.winfo_children()):
+                self.bind_tree(child, event, call)
+            child.bind('<Escape>', self.open_main)
 
     def open_settings(self):
         self.withdraw()
         self.cur_window = Window.SETTINGS
         self.settings = tk.Toplevel(master=self)
-        self.settings.geometry('300x300')
+        self.settings.focus_force()
+        self.windows[1] = self.settings
+        self.settings.bind('<Escape>', self.open_main)
+        self.settings.geometry('300x320')
         self.settings.resizable(False, False)
         self.settings.protocol("WM_DELETE_WINDOW", self.quit)
         self.pck_btn = tk.Button(master=self.settings, text="Pick line's colour", font=self.FONT)
         self.pck_btn.configure(command=self.pick_color)
         self.pck_btn.pack(pady=30)
+        #self.was_changed
         frame = tk.Frame(master=self.settings)
         frame.pack()
         tk.Label(master=frame, text="Line`s width in pixels", padx=5,
                  font=self.FONT).grid(row=0, column=0)
-        self.spinbox = tk.Spinbox(master=frame,from_=1,to=50,validate="key", validatecommand=(self.settings.register(self.validate), "%P", 0, 50), font=self.FONT)
+        self.spinbox = tk.Spinbox(master=frame,from_=1,to=50,validate="key",
+                                  validatecommand=(self.settings.register(self.validate), "%P", 0, 50,0), font=self.FONT)
         self.spinbox.grid(row=0,column=1)
         tk.Label(master=self.settings, text="Resize window:", font=self.FONT).pack(pady=30)
         frame = tk.Frame(master=self.settings)
         frame.pack()
-        tk.Label(master=frame, text="width  (0 - "+str(self.winfo_screenwidth())+")", padx=5,
+        tk.Label(master=frame, text="width  (250 - "+str(self.winfo_screenwidth())+")", padx=5,
                  font=self.FONT).grid(row=0,column=0)
-        tk.Label(master=frame, text="height (0 - "+str(self.winfo_screenheight())+")", padx=5,
+        tk.Label(master=frame, text="height (250 - "+str(self.winfo_screenheight())+")", padx=5,
                  font=self.FONT).grid(row=1,column=0)
-        self.entr_W = tk.Entry(master=frame, validate="key", validatecommand=(self.settings.register(self.validate), "%P", 1, self.winfo_screenwidth()), font=self.FONT)
+        self.entr_W = tk.Entry(master=frame, validate="key", validatecommand=(self.settings.register(self.validate),
+                                                                "%P", 1, self.winfo_screenwidth(),1), font=self.FONT)
+        self.entr_W.insert('0',self.CANVAS_WIDTH)
         self.entr_W.grid(row=0,column=1)
-        self.entr_H = tk.Entry(master=frame, validate='key', validatecommand=(self.settings.register(self.validate), "%P", 1, self.winfo_screenheight()), font=self.FONT)
+        self.entr_H = tk.Entry(master=frame, validate='key', validatecommand=(self.settings.register(self.validate),
+                                                                "%P", 1, self.winfo_screenheight(),2), font=self.FONT)
+        self.entr_H.insert('0',self.CANVAS_HEIGHT)
         self.entr_H.grid(row=1, column=1)
+        # This button is actually useless. I think it just makes user feel comnfortable
+        self.bind_tree(self.settings, '<Escape>', self.open_main)
+        tk.Button(master=self.settings, text='Save',font = self.FONT).pack(pady=30)
 
 
-    def validate(self, value, min_value, max_value):
+    def validate(self, value, min_value, max_value, widget_num):
         # Checks if entered num is a num and less than given value
         try:
             value = int(value)
             if value >= int(min_value) and value <= int(max_value):
+                if widget_num == 0:
+                    self.LINE_WIDTH = value
+                elif widget_num == 1:
+                    self.CANVAS_WIDTH = value
+                elif widget_num == 2:
+                    self.CANVAS_HEIGHT = value
                 return True
             self.settings.bell()
             return False
-        except:
+        except ValueError:
             if value == '':
                 return True
             self.settings.bell()
             return False
 
-
-
-
-
     def open_author(self):
-        print('3')
+        self.author = tk.Toplevel(master=self)
+        self.author.focus_force()
+        self.windows[2] = self.author
+        self.cur_window = Window.AUTHOR
+        self.author.bind('<Escape>', self.open_main)
+        self.author.geometry('200x200')
+        self.author.resizable(False, False)
+        self.author.protocol("WM_DELETE_WINDOW", self.quit)
         pass
 
     def open_main(self, event):
-        print(self.cur_window.value)
-        self.main_btns[self.cur_window.value]["state"] = tk.DISABLED
+        print('ESC pressed')
+        self.windows[self.cur_window.value].destroy()
         self.deiconify()
 
     def quit(self, event=None):
@@ -204,7 +244,7 @@ class App(tk.Tk):
                     y = y + ys
                 else:
                     p = p + 2 * dy
-                self.pixels.append(self.canvas.create_rectangle(x, y, x , y + self.LINE_WIDTH, outline='red'))
+                self.pixels.append(self.canvas.create_rectangle(x, y, x , y + self.LINE_WIDTH, outline=self.OUTLINE))
         else:
             p = 2 * dx - dy
             while y != y2:
@@ -214,7 +254,7 @@ class App(tk.Tk):
                     x = x + xs
                 else:
                     p = p + 2 * dx
-                self.pixels.append(self.canvas.create_rectangle(x, y, x + self.LINE_WIDTH , y, outline='blue'))
+                self.pixels.append(self.canvas.create_rectangle(x, y, x + self.LINE_WIDTH , y, outline=self.OUTLINE))
 
 
 if __name__ == '__main__':
