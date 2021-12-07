@@ -57,26 +57,6 @@ class App(tk.Tk):
         self.draw_system()
         self.bind_tree(self.drawing, '<Escape>', self.open_main)
 
-    def pick_color(self) -> str:
-        #  Returns none if window was closed using X
-        self.pck_btn["state"] = tk.DISABLED
-        colors = colorchooser.askcolor(title="Choose a fancy color!")
-        self.pck_btn["state"] = tk.NORMAL
-        if colors[1] != None:
-            self.OUTLINE = colors[1]
-        else:
-            self.OUTLINE = 'black'
-
-    def quit_stg(self):
-        self.deiconify()
-
-    def bind_tree(self, widget, event, call):
-        # Function to recursively bind ESC event (to open main window)
-        # to every single widget in a widget
-        for child in widget.children.values():
-            if len(child.winfo_children()):
-                self.bind_tree(child, event, call)
-            child.bind('<Escape>', self.open_main)
 
     def open_settings(self):
         self.withdraw()
@@ -118,6 +98,36 @@ class App(tk.Tk):
         self.bind_tree(self.settings, '<Escape>', self.open_main)
         tk.Button(master=self.settings, text='Save',font = self.FONT).pack(pady=30)
 
+    def open_author(self):
+        self.author = tk.Toplevel(master=self)
+        self.author.focus_force()
+        self.windows[2] = self.author
+        self.cur_window = Window.AUTHOR
+        self.author.bind('<Escape>', self.open_main)
+        self.author.geometry('200x200')
+        self.author.resizable(False, False)
+        self.author.protocol("WM_DELETE_WINDOW", self.quit)
+
+    def pick_color(self) -> str:
+        #  Returns none if window was closed using X
+        self.pck_btn["state"] = tk.DISABLED
+        colors = colorchooser.askcolor(title="Choose a fancy color!")
+        self.pck_btn["state"] = tk.NORMAL
+        if colors[1] != None:
+            self.OUTLINE = colors[1]
+        else:
+            self.OUTLINE = 'black'
+
+    def quit_stg(self):
+        self.deiconify()
+
+    def bind_tree(self, widget, event, call):
+        # Function to recursively bind ESC event (to open main window)
+        # to every single widget in a widget
+        for child in widget.children.values():
+            if len(child.winfo_children()):
+                self.bind_tree(child, event, call)
+            child.bind('<Escape>', self.open_main)
 
     def validate(self, value, min_value, max_value, widget_num):
         # Checks if entered num is a num and less than given value
@@ -139,16 +149,6 @@ class App(tk.Tk):
             self.settings.bell()
             return False
 
-    def open_author(self):
-        self.author = tk.Toplevel(master=self)
-        self.author.focus_force()
-        self.windows[2] = self.author
-        self.cur_window = Window.AUTHOR
-        self.author.bind('<Escape>', self.open_main)
-        self.author.geometry('200x200')
-        self.author.resizable(False, False)
-        self.author.protocol("WM_DELETE_WINDOW", self.quit)
-        pass
 
     def open_main(self, event):
         print('ESC pressed')
