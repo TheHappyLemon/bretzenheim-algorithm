@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import colorchooser
 from enum import Enum
+import webbrowser
 
 class Window(Enum):
     DRAWING = 0
@@ -95,10 +96,11 @@ class App(tk.Tk):
         self.entr_H.insert('0',self.CANVAS_HEIGHT)
         self.entr_H.grid(row=1, column=1)
         # This button is actually useless. I think it just makes user feel comnfortable
-        self.bind_tree(self.settings, '<Escape>', self.open_main)
+        # self.bind_tree(self.settings, '<Escape>', self.open_main) -
         tk.Button(master=self.settings, text='Save',font = self.FONT).pack(pady=30)
 
     def open_author(self):
+        self.withdraw()
         self.author = tk.Toplevel(master=self)
         self.author.focus_force()
         self.windows[2] = self.author
@@ -107,6 +109,15 @@ class App(tk.Tk):
         self.author.geometry('200x200')
         self.author.resizable(False, False)
         self.author.protocol("WM_DELETE_WINDOW", self.quit)
+        link = tk.Label(self.author, text="https://github.com/", fg="blue", cursor="hand2")
+        link.bind("<Button-1>", self.open_github)
+        link.pack(pady=30)
+        tk.Label(self.author, text="Link to this project's GitHub repository :)",wraplength=150, justify="center").pack(padx = 10)
+
+
+    def open_github(self, event):
+        print(event)
+        webbrowser.open_new("https://github.com/")
 
     def pick_color(self) -> str:
         #  Returns none if window was closed using X
