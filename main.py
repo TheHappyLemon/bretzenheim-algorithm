@@ -4,6 +4,7 @@ from enum import Enum
 import webbrowser
 
 class Window(Enum):
+    MAIN = -1
     DRAWING = 0
     SETTINGS = 1
     AUTHOR = 2
@@ -28,12 +29,16 @@ class App(tk.Tk):
         self.windows = [None, None, None] # list to store all the windows in order to close them with ESC button
         self.CANVAS_WIDTH = 850
         self.CANVAS_HEIGHT = 650
+        self.drawing_on = False
+        self.cur_window = -1
         tmp = tk.Button(master=self, text='Quit', width=10, font=self.FONT)
         tmp.configure(command=self.quit)
         tmp.pack()
         
 
     def action_33(self):
+        # action_33 was intented as an Easter egg to smth (at least I think so). However,
+        # I forgot what it meant :(
         self.withdraw()
         self.cur_window = Window.DRAWING
         self.drawing = tk.Toplevel(master=self)
@@ -43,6 +48,7 @@ class App(tk.Tk):
         self.drawing.protocol("WM_DELETE_WINDOW", self.quit)
         self.drawing.focus_force()
         self.drawing.geometry(str(self.CANVAS_WIDTH)+'x'+str( self.CANVAS_HEIGHT))
+        self.drawing.resizable(False, False)
         self.LABEL_DISTANCE = 100
         self.canvas = tk.Canvas(self.drawing, bg='white', width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
         self.canvas.pack(fill="both", expand=True)
@@ -68,11 +74,10 @@ class App(tk.Tk):
         self.settings.bind('<Escape>', self.open_main)
         self.settings.geometry('300x320')
         self.settings.resizable(False, False)
-        self.settings.protocol("WM_DELETE_WINDOW", self.quit)
+        self.settings.protocol("WM_DELETE_WINDOW", self.quit_stg)
         self.pck_btn = tk.Button(master=self.settings, text="Pick line's colour", font=self.FONT)
         self.pck_btn.configure(command=self.pick_color)
         self.pck_btn.pack(pady=30)
-        #self.was_changed
         frame = tk.Frame(master=self.settings)
         frame.pack()
         tk.Label(master=frame, text="Line`s width in pixels", padx=5,
@@ -116,7 +121,6 @@ class App(tk.Tk):
 
 
     def open_github(self, event):
-        print(event)
         webbrowser.open_new("https://github.com/")
 
     def pick_color(self) -> str:
@@ -130,11 +134,17 @@ class App(tk.Tk):
             self.OUTLINE = 'black'
 
     def quit_stg(self):
-        self.deiconify()
+        if self.drawing_on:
+            self.drawing_on = False
+            self.cur_window = Window.DRAWING
+            self.settings.destroy()
+        else:
+            self.quit()
 
     def bind_tree(self, widget, event, call):
         # Function to recursively bind ESC event (to open main window)
         # to every single widget in a widget
+        #I think it is useleess hmmm
         for child in widget.children.values():
             if len(child.winfo_children()):
                 self.bind_tree(child, event, call)
@@ -145,11 +155,12 @@ class App(tk.Tk):
         try:
             value = int(value)
             if value >= int(min_value) and value <= int(max_value):
-                if widget_num == 0:
+                print(widget_num)
+                if widget_num == '0':
                     self.LINE_WIDTH = value
-                elif widget_num == 1:
+                elif widget_num == '1':
                     self.CANVAS_WIDTH = value
-                elif widget_num == 2:
+                elif widget_num == '2':
                     self.CANVAS_HEIGHT = value
                 return True
             self.settings.bell()
@@ -163,11 +174,25 @@ class App(tk.Tk):
 
     def open_main(self, event):
         print('ESC pressed')
-        self.windows[self.cur_window.value].destroy()
-        self.deiconify()
+        print(self.cur_window)
+        if self.cur_window == Window.SETTINGS and self.drawing_on:
+            self.windows[self.cur_window.value].destroy()
+            self.cur_window = Window.DRAWING
+        elif self.cur_window == Window.DRAWING:
+            self.drawing_on = True
+            self.open_settings()
+        else:
+            self.windows[self.cur_window.value].destroy()
+            self.deiconify()
+            self.cur_window = -1
+
 
     def quit(self, event=None):
-        self.destroy()
+        if self.cur_window == -1:
+            self.destroy()
+        else:
+            self.windows[self.cur_window.value].destroy()
+            self.deiconify()
         pass
 
 
