@@ -32,6 +32,7 @@ class App(tk.Tk):
         self.MAX_WIDTH = self.CANVAS_WIDTH
         self.MAX_HEIGHT = self.CANVAS_HEIGHT
         self.drawing_on = False
+        self.LINE_WIDTH = 1
         self.cur_window = -1
         tmp = tk.Button(master=self, text='Quit', width=10, font=self.FONT)
         tmp.configure(command=self.quit)
@@ -56,7 +57,6 @@ class App(tk.Tk):
         self.canvas.pack(fill="both", expand=True)
         self.start_point = ()
         self.is_drawing = False
-        self.LINE_WIDTH = 0
         self.OUTLINE = 'black'
         self.canvas.bind("<Button-1>", self.callback)
         self.drawing.title('Object trajetory')
@@ -67,6 +67,7 @@ class App(tk.Tk):
 
 
     def open_settings(self):
+
         self.withdraw()
         self.cur_window = Window.SETTINGS
         self.settings = tk.Toplevel(master=self)
@@ -79,12 +80,17 @@ class App(tk.Tk):
         self.pck_btn = tk.Button(master=self.settings, text="Pick line's colour", font=self.FONT)
         self.pck_btn.configure(command=self.pick_color)
         self.pck_btn.pack(pady=30)
+        print('from open stg',self.LINE_WIDTH)
         frame = tk.Frame(master=self.settings)
         frame.pack()
         tk.Label(master=frame, text="Line`s width in pixels", padx=5,
                  font=self.FONT).grid(row=0, column=0)
-        self.spinbox = tk.Spinbox(master=frame,from_=1,to=50,validate="key",
-                                  validatecommand=(self.settings.register(self.validate), "%P", 0, 50,0), font=self.FONT)
+        self.spinbox = tk.Spinbox(master=frame,validate="key",
+                                  validatecommand=(self.settings.register(self.validate),"%P", 1, 50,0), font=self.FONT)
+        print('from open stg',self.LINE_WIDTH)
+        self.spinbox.delete(0, "end")
+        self.spinbox.insert(0,self.LINE_WIDTH)
+        print('from open stg',self.LINE_WIDTH)
         self.spinbox.grid(row=0,column=1)
         tk.Label(master=self.settings, text="Resize window:", font=self.FONT).pack(pady=30)
         frame = tk.Frame(master=self.settings)
@@ -138,8 +144,9 @@ class App(tk.Tk):
         if self.drawing_on:
             self.drawing_on = False
             self.cur_window = Window.DRAWING
-            self.resize_drawing(self.CANVAS_WIDTH, self.CANVAS_HEIGHT)
+            self.resize_drawing()
             self.settings.destroy()
+            print(self.LINE_WIDTH)
         else:
             self.quit()
 
@@ -157,7 +164,6 @@ class App(tk.Tk):
         try:
             value = int(value)
             if value >= int(min_value) and value <= int(max_value):
-                print(widget_num)
                 if widget_num == '0':
                     self.LINE_WIDTH = value
                 elif widget_num == '1':
@@ -175,14 +181,13 @@ class App(tk.Tk):
 
 
     def open_main(self, event):
-        print('ESC pressed')
-        print(self.cur_window)
         if self.cur_window == Window.SETTINGS and self.drawing_on:
             self.windows[self.cur_window.value].destroy()
             self.cur_window = Window.DRAWING
-            self.resize_drawing(self.CANVAS_WIDTH, self.CANVAS_HEIGHT)
+            self.resize_drawing()
         elif self.cur_window == Window.DRAWING:
             self.drawing_on = True
+            print(self.LINE_WIDTH)
             self.open_settings()
         else:
             self.windows[self.cur_window.value].destroy()
@@ -199,9 +204,6 @@ class App(tk.Tk):
         pass
 
 
-    def on_click(self, event):
-        print(event)
-
     def callback(self, event):
         self.canvas.delete()
         if self.is_drawing:
@@ -211,49 +213,36 @@ class App(tk.Tk):
             self.start_point = (event.x, event.y)
             self.is_drawing = True
 
-    def resize_drawing(self,width, height):
-        if width > self.MAX_WIDTH:
-            self.MAX_WIDTH = width
-            labels_can_fit_x = (width - self.drawing.winfo_width()) // self.LABEL_DISTANCE
-            for i in range(labels_can_fit_x):
-                self.add_coord_label(self.labels[0][-1].winfo_x() + self.LABEL_DISTANCE, 0, int(self.labels[0][-1].cget('text')) + 100)
-                self.update()
-            for i in range(labels_can_fit_x):
-                delta = (i + len(self.labels[0]) - labels_can_fit_x) * 100
-                print(self.canvas.create_line(delta, 0, delta, height, fill='light gray'))
-                pass
-            for i in range(0, len(self.labels[1])):
-                self.canvas.create_line(self.drawing.winfo_width(), (i + 1) * 100, width, (i + 1) * 100, fill='light gray')
-        if height > self.MAX_HEIGHT:
-            self.MAX_HEIGHT = height
-            labels_can_fit_y = (height - self.drawing.winfo_height()) // self.LABEL_DISTANCE
-            for i in range(labels_can_fit_y):
-                self.add_coord_label(0, self.labels[1][-1].winfo_y() + self.LABEL_DISTANCE, int(self.labels[1][-1].cget('text')) + 100)
-                self.update()
-            for i in range(labels_can_fit_y):
-                delta = (i + len(self.labels[1]) - labels_can_fit_y + 1) * 100
-                self.canvas.create_line(0, delta, width, delta, fill='light gray')
-            for i in range(0, len(self.labels[0])):
-                self.canvas.create_line((i + 1) * 100, self.drawing.winfo_height(), (i + 1) * 100, height, fill='light gray')
+    def resize_drawing(self):
+        if self.CANVAS_WIDTH < 250:
+            self.CANVAS_WIDTH = 250
+        if self.CANVAS_HEIGHT < 250:
+            self.CANVAS_HEIGHT = 250
+        if self.CANVAS_WIDTH > self.MAX_WIDTH:
+            self.MAX_WIDTH = self.CANVAS_WIDTH
+            self.draw_system(startx=(self.labels[0][-1].winfo_x() + self.LABEL_DISTANCE) // 100,starty=1)
+        if self.CANVAS_HEIGHT > self.MAX_HEIGHT:
+            self.MAX_HEIGHT = self.CANVAS_HEIGHT
+            self.draw_system(startx=0,starty=(self.labels[1][-1].winfo_y() + self.LABEL_DISTANCE) // 100)
         self.drawing.geometry(str(self.CANVAS_WIDTH)+'x'+str(self.CANVAS_HEIGHT))
 
     def add_coord_label(self, x, y, text):
+        print('adding label to',x,y)
         label = tk.Label(self.canvas, text=text, bg='white',anchor='w')
         label.place(x=x,y=y)
-        label.bind('<Button-1>,', self.on_click)
         if y == 0:
             self.labels[0].append(label)
         else:
             self.labels[1].append(label)
 
-    def draw_system(self):
-        self.add_coord_label(0,0,'0')
-        for i in range(1,self.CANVAS_WIDTH // self.LABEL_DISTANCE + 1):
+    def draw_system(self,startx=1, starty=1):
+        if startx == 1:
+            self.add_coord_label(0,0,'0')
+        for i in range(startx,self.CANVAS_WIDTH // self.LABEL_DISTANCE + 1):
             self.add_coord_label(x=i * 100 - 10,y=0,text=i * 100)
             self.canvas.create_line(i * 100,0,i * 100,self.CANVAS_HEIGHT,fill='light gray')
-        for i in range(1,self.CANVAS_HEIGHT // self.LABEL_DISTANCE + 1):
+        for i in range(starty,self.CANVAS_HEIGHT // self.LABEL_DISTANCE + 1):
             self.add_coord_label(x=0,y=i * 100 - 10,text=i * 100)
-            print(0,i * 100,self.CANVAS_WIDTH,i * 100)
             self.canvas.create_line(0,i * 100,self.CANVAS_WIDTH,i * 100,fill='light gray')
 
     def draw_line(self, x1, y1, x2, y2, color):
