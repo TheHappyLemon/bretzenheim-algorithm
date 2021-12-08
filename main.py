@@ -29,6 +29,8 @@ class App(tk.Tk):
         self.windows = [None, None, None] # list to store all the windows in order to close them with ESC button
         self.CANVAS_WIDTH = 850
         self.CANVAS_HEIGHT = 650
+        self.MAX_WIDTH = self.CANVAS_WIDTH
+        self.MAX_HEIGHT = self.CANVAS_HEIGHT
         self.drawing_on = False
         self.cur_window = -1
         tmp = tk.Button(master=self, text='Quit', width=10, font=self.FONT)
@@ -52,7 +54,6 @@ class App(tk.Tk):
         self.LABEL_DISTANCE = 100
         self.canvas = tk.Canvas(self.drawing, bg='white', width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
         self.canvas.pack(fill="both", expand=True)
-        self.canvas.bind('<Configure>', self.on_resize)
         self.start_point = ()
         self.is_drawing = False
         self.LINE_WIDTH = 0
@@ -137,6 +138,7 @@ class App(tk.Tk):
         if self.drawing_on:
             self.drawing_on = False
             self.cur_window = Window.DRAWING
+            self.resize_drawing(self.CANVAS_WIDTH, self.CANVAS_HEIGHT)
             self.settings.destroy()
         else:
             self.quit()
@@ -178,6 +180,7 @@ class App(tk.Tk):
         if self.cur_window == Window.SETTINGS and self.drawing_on:
             self.windows[self.cur_window.value].destroy()
             self.cur_window = Window.DRAWING
+            self.resize_drawing(self.CANVAS_WIDTH, self.CANVAS_HEIGHT)
         elif self.cur_window == Window.DRAWING:
             self.drawing_on = True
             self.open_settings()
@@ -208,36 +211,31 @@ class App(tk.Tk):
             self.start_point = (event.x, event.y)
             self.is_drawing = True
 
-    def on_resize(self, event):
-        # TODO make option to refresh if user resized too fast, because it breaks :)
-        # DONT TOUCH THIS PART ANYMORE IT IS AWFUL, IT IS DISGUSTING
-        for px in self.pixels:
-            #that is just for test to see whether I can delete drawn lines
-            self.canvas.delete(px)
-            self.pixels.remove(px)
-        print(len(self.pixels))
-        labels_can_fit_x = (event.width - self.CANVAS_WIDTH) // self.LABEL_DISTANCE
-        labels_can_fit_y = (event.height - self.CANVAS_HEIGHT) // self.LABEL_DISTANCE
-        if event.width > self.CANVAS_WIDTH and labels_can_fit_x > 0:
+    def resize_drawing(self,width, height):
+        if width > self.MAX_WIDTH:
+            self.MAX_WIDTH = width
+            labels_can_fit_x = (width - self.drawing.winfo_width()) // self.LABEL_DISTANCE
             for i in range(labels_can_fit_x):
                 self.add_coord_label(self.labels[0][-1].winfo_x() + self.LABEL_DISTANCE, 0, int(self.labels[0][-1].cget('text')) + 100)
                 self.update()
             for i in range(labels_can_fit_x):
                 delta = (i + len(self.labels[0]) - labels_can_fit_x) * 100
-                print(self.canvas.create_line(delta, 0, delta, event.height, fill='light gray'))
+                print(self.canvas.create_line(delta, 0, delta, height, fill='light gray'))
+                pass
             for i in range(0, len(self.labels[1])):
-                self.canvas.create_line(self.CANVAS_WIDTH, (i + 1) * 100, event.width, (i + 1) * 100, fill='light gray')
-            self.CANVAS_WIDTH = event.width
-        if event.height > self.CANVAS_HEIGHT and labels_can_fit_y > 0:
+                self.canvas.create_line(self.drawing.winfo_width(), (i + 1) * 100, width, (i + 1) * 100, fill='light gray')
+        if height > self.MAX_HEIGHT:
+            self.MAX_HEIGHT = height
+            labels_can_fit_y = (height - self.drawing.winfo_height()) // self.LABEL_DISTANCE
             for i in range(labels_can_fit_y):
                 self.add_coord_label(0, self.labels[1][-1].winfo_y() + self.LABEL_DISTANCE, int(self.labels[1][-1].cget('text')) + 100)
                 self.update()
             for i in range(labels_can_fit_y):
                 delta = (i + len(self.labels[1]) - labels_can_fit_y + 1) * 100
-                self.canvas.create_line(0, delta, event.width, delta, fill='light gray')
+                self.canvas.create_line(0, delta, width, delta, fill='light gray')
             for i in range(0, len(self.labels[0])):
-                self.canvas.create_line((i + 1) * 100, self.CANVAS_HEIGHT, (i + 1) * 100, event.height, fill='light gray')
-            self.CANVAS_HEIGHT = event.height
+                self.canvas.create_line((i + 1) * 100, self.drawing.winfo_height(), (i + 1) * 100, height, fill='light gray')
+        self.drawing.geometry(str(self.CANVAS_WIDTH)+'x'+str(self.CANVAS_HEIGHT))
 
     def add_coord_label(self, x, y, text):
         label = tk.Label(self.canvas, text=text, bg='white',anchor='w')
