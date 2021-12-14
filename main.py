@@ -62,7 +62,9 @@ class App(tk.Tk):
         self.drawing.title('Object trajetory')
         self.labels = [[],[]]
         self.pixels = []
-        self.draw_system()
+        self.add_coord_label(0, 0, '0')
+        self.resize_drawing(SUPPRES=True)
+        print('initial drawn')
         self.bind_tree(self.drawing, '<Escape>', self.open_main)
 
 
@@ -213,37 +215,46 @@ class App(tk.Tk):
             self.start_point = (event.x, event.y)
             self.is_drawing = True
 
-    def resize_drawing(self):
+    def resize_drawing(self, SUPPRES = False):
         if self.CANVAS_WIDTH < 250:
             self.CANVAS_WIDTH = 250
         if self.CANVAS_HEIGHT < 250:
             self.CANVAS_HEIGHT = 250
-        if self.CANVAS_WIDTH > self.MAX_WIDTH:
+        if self.CANVAS_WIDTH > self.MAX_WIDTH or SUPPRES:
             self.MAX_WIDTH = self.CANVAS_WIDTH
-            self.draw_system(startx=(self.labels[0][-1].winfo_x() + self.LABEL_DISTANCE) // 100,starty=1)
+            self.draw_system(startx=(self.labels[0][-1].winfo_x() + self.LABEL_DISTANCE),starty=self.drawing.winfo_width(), expandY = False)
         if self.CANVAS_HEIGHT > self.MAX_HEIGHT:
             self.MAX_HEIGHT = self.CANVAS_HEIGHT
-            self.draw_system(startx=0,starty=(self.labels[1][-1].winfo_y() + self.LABEL_DISTANCE) // 100)
+            self.draw_system(starty=(self.labels[1][-1].winfo_y() + self.LABEL_DISTANCE), startx=self.drawing.winfo_height(), expandX=False)
         self.drawing.geometry(str(self.CANVAS_WIDTH)+'x'+str(self.CANVAS_HEIGHT))
 
     def add_coord_label(self, x, y, text):
         print('adding label to',x,y)
         label = tk.Label(self.canvas, text=text, bg='white',anchor='w')
         label.place(x=x,y=y)
-        if y == 0:
+        if y == 0 and x == 0:
             self.labels[0].append(label)
-        else:
             self.labels[1].append(label)
+        elif x == 0:
+            self.labels[1].append(label)
+        else:
+            self.labels[0].append(label)
 
-    def draw_system(self,startx=1, starty=1):
-        if startx == 1:
-            self.add_coord_label(0,0,'0')
-        for i in range(startx,self.CANVAS_WIDTH // self.LABEL_DISTANCE + 1):
-            self.add_coord_label(x=i * 100 - 10,y=0,text=i * 100)
-            self.canvas.create_line(i * 100,0,i * 100,self.CANVAS_HEIGHT,fill='light gray')
-        for i in range(starty,self.CANVAS_HEIGHT // self.LABEL_DISTANCE + 1):
-            self.add_coord_label(x=0,y=i * 100 - 10,text=i * 100)
-            self.canvas.create_line(0,i * 100,self.CANVAS_WIDTH,i * 100,fill='light gray')
+
+    def draw_system(self,startx=1, starty=1, expandX = True, expandY = True):
+        if expandX:
+            for i in range(startx // 100,self.CANVAS_WIDTH // self.LABEL_DISTANCE + 1):
+                self.add_coord_label(x = startx + (i-startx//100) * 100 - 10,y=0,text=i * 100)
+                self.canvas.create_line(startx + (i-startx//100) * 100,0,startx + (i-startx//100) * 100,self.CANVAS_HEIGHT,fill='light gray')
+            for i in range(self.CANVAS_HEIGHT // self.LABEL_DISTANCE + 1):
+                self.canvas.create_line(starty, i * 100, self.CANVAS_WIDTH, i * 100,fill='light gray')
+        if expandY:
+            for i in range(starty // 100,self.CANVAS_HEIGHT // self.LABEL_DISTANCE + 1):
+                self.add_coord_label(x=0,y=starty + (i-starty//100) * 100 - 10,text=i * 100)
+                self.canvas.create_line(0,starty + (i-starty//100) * 100,self.CANVAS_WIDTH,starty + (i-starty//100) * 100,fill='light gray')
+            for i in range(self.CANVAS_WIDTH // self.LABEL_DISTANCE + 1):
+                print(i*100)
+                self.canvas.create_line(i * 100, startx, i*100, self.CANVAS_HEIGHT)
 
     def draw_line(self, x1, y1, x2, y2, color):
         dx = abs(x2 - x1)
