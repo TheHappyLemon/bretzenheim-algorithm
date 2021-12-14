@@ -9,6 +9,7 @@ class Window(Enum):
     SETTINGS = 1
     AUTHOR = 2
 
+
 class App(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
@@ -62,6 +63,7 @@ class App(tk.Tk):
         self.drawing.title('Object trajetory')
         self.labels = [[],[]]
         self.pixels = []
+        self.lines = []
         self.draw_system()
         self.bind_tree(self.drawing, '<Escape>', self.open_main)
 
@@ -207,6 +209,7 @@ class App(tk.Tk):
     def callback(self, event):
         self.canvas.delete()
         if self.is_drawing:
+            self.pixels.append((self.start_point[0],self.start_point[1], event.x, event.y))
             self.draw_line(self.start_point[0],self.start_point[1], event.x, event.y, '#ffffff')
             self.is_drawing = False
         else:
@@ -214,17 +217,17 @@ class App(tk.Tk):
             self.is_drawing = True
 
     def resize_drawing(self):
-        if self.CANVAS_WIDTH < 250:
-            self.CANVAS_WIDTH = 250
-        if self.CANVAS_HEIGHT < 250:
-            self.CANVAS_HEIGHT = 250
-        if self.CANVAS_WIDTH > self.MAX_WIDTH:
-            self.MAX_WIDTH = self.CANVAS_WIDTH
-            self.draw_system(startx=(self.labels[0][-1].winfo_x() + self.LABEL_DISTANCE) // 100,starty=1)
-        if self.CANVAS_HEIGHT > self.MAX_HEIGHT:
-            self.MAX_HEIGHT = self.CANVAS_HEIGHT
-            self.draw_system(startx=0,starty=(self.labels[1][-1].winfo_y() + self.LABEL_DISTANCE) // 100)
-        self.drawing.geometry(str(self.CANVAS_WIDTH)+'x'+str(self.CANVAS_HEIGHT))
+        print(self.CANVAS_WIDTH, self.drawing.winfo_width(), self.CANVAS_HEIGHT, self.drawing.winfo_height() )
+        if self.CANVAS_WIDTH != self.drawing.winfo_width() or self.CANVAS_HEIGHT != self.drawing.winfo_height():
+            if self.CANVAS_WIDTH < 250:
+                self.CANVAS_WIDTH = 250
+            if self.CANVAS_HEIGHT < 250:
+                self.CANVAS_HEIGHT = 250
+            self.canvas.delete('all')
+            self.draw_system()
+            for px in self.pixels:
+                self.draw_line(px[0],px[1],px[2],px[3],self.OUTLINE)
+            self.drawing.geometry(str(self.CANVAS_WIDTH)+'x'+str(self.CANVAS_HEIGHT))
 
     def add_coord_label(self, x, y, text):
         print('adding label to',x,y)
@@ -235,15 +238,15 @@ class App(tk.Tk):
         else:
             self.labels[1].append(label)
 
-    def draw_system(self,startx=1, starty=1):
-        if startx == 1:
-            self.add_coord_label(0,0,'0')
-        for i in range(startx,self.CANVAS_WIDTH // self.LABEL_DISTANCE + 1):
+    def draw_system(self):
+        self.add_coord_label(0,0,'0')
+        for i in range(1,self.CANVAS_WIDTH // self.LABEL_DISTANCE + 1):
             self.add_coord_label(x=i * 100 - 10,y=0,text=i * 100)
-            self.canvas.create_line(i * 100,0,i * 100,self.CANVAS_HEIGHT,fill='light gray')
-        for i in range(starty,self.CANVAS_HEIGHT // self.LABEL_DISTANCE + 1):
+            self.lines.append(self.canvas.create_line(i * 100,0,i * 100,self.CANVAS_HEIGHT,fill='light gray'))
+        for i in range(1,self.CANVAS_HEIGHT // self.LABEL_DISTANCE + 1):
             self.add_coord_label(x=0,y=i * 100 - 10,text=i * 100)
-            self.canvas.create_line(0,i * 100,self.CANVAS_WIDTH,i * 100,fill='light gray')
+            self.lines.append(self.canvas.create_line(0,i * 100,self.CANVAS_WIDTH,i * 100,fill='light gray'))
+
 
     def draw_line(self, x1, y1, x2, y2, color):
         dx = abs(x2 - x1)
@@ -267,7 +270,7 @@ class App(tk.Tk):
                     y = y + ys
                 else:
                     p = p + 2 * dy
-                self.pixels.append(self.canvas.create_rectangle(x, y, x , y + self.LINE_WIDTH, outline=self.OUTLINE))
+                self.canvas.create_rectangle(x, y, x , y + self.LINE_WIDTH, outline=self.OUTLINE)
         else:
             p = 2 * dx - dy
             while y != y2:
@@ -277,7 +280,7 @@ class App(tk.Tk):
                     x = x + xs
                 else:
                     p = p + 2 * dx
-                self.pixels.append(self.canvas.create_rectangle(x, y, x + self.LINE_WIDTH , y, outline=self.OUTLINE))
+                self.canvas.create_rectangle(x, y, x + self.LINE_WIDTH , y, outline=self.OUTLINE)
 
 
 if __name__ == '__main__':
