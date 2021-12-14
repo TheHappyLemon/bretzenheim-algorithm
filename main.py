@@ -69,7 +69,6 @@ class App(tk.Tk):
 
 
     def open_settings(self):
-
         self.withdraw()
         self.cur_window = Window.SETTINGS
         self.settings = tk.Toplevel(master=self)
@@ -82,17 +81,14 @@ class App(tk.Tk):
         self.pck_btn = tk.Button(master=self.settings, text="Pick line's colour", font=self.FONT)
         self.pck_btn.configure(command=self.pick_color)
         self.pck_btn.pack(pady=30)
-        print('from open stg',self.LINE_WIDTH)
         frame = tk.Frame(master=self.settings)
         frame.pack()
         tk.Label(master=frame, text="Line`s width in pixels", padx=5,
                  font=self.FONT).grid(row=0, column=0)
         self.spinbox = tk.Spinbox(master=frame,validate="key",
                                   validatecommand=(self.settings.register(self.validate),"%P", 1, 50,0), font=self.FONT)
-        print('from open stg',self.LINE_WIDTH)
         self.spinbox.delete(0, "end")
         self.spinbox.insert(0,self.LINE_WIDTH)
-        print('from open stg',self.LINE_WIDTH)
         self.spinbox.grid(row=0,column=1)
         tk.Label(master=self.settings, text="Resize window:", font=self.FONT).pack(pady=30)
         frame = tk.Frame(master=self.settings)
@@ -110,7 +106,6 @@ class App(tk.Tk):
         self.entr_H.insert('0',self.CANVAS_HEIGHT)
         self.entr_H.grid(row=1, column=1)
         # This button is actually useless. I think it just makes user feel comnfortable
-        # self.bind_tree(self.settings, '<Escape>', self.open_main) -
         tk.Button(master=self.settings, text='Save',font = self.FONT).pack(pady=30)
 
     def open_author(self):
@@ -152,15 +147,6 @@ class App(tk.Tk):
         else:
             self.quit()
 
-    def bind_tree(self, widget, event, call):
-        # Function to recursively bind ESC event (to open main window)
-        # to every single widget in a widget
-        #I think it is useleess hmmm
-        for child in widget.children.values():
-            if len(child.winfo_children()):
-                self.bind_tree(child, event, call)
-            child.bind('<Escape>', self.open_main)
-
     def validate(self, value, min_value, max_value, widget_num):
         # Checks if entered num is a num and less than given value
         try:
@@ -189,7 +175,6 @@ class App(tk.Tk):
             self.resize_drawing()
         elif self.cur_window == Window.DRAWING:
             self.drawing_on = True
-            print(self.LINE_WIDTH)
             self.open_settings()
         else:
             self.windows[self.cur_window.value].destroy()
@@ -207,7 +192,6 @@ class App(tk.Tk):
 
 
     def callback(self, event):
-        self.canvas.delete()
         if self.is_drawing:
             self.pixels.append((self.start_point[0],self.start_point[1], event.x, event.y))
             self.draw_line(self.start_point[0],self.start_point[1], event.x, event.y, '#ffffff')
@@ -217,7 +201,6 @@ class App(tk.Tk):
             self.is_drawing = True
 
     def resize_drawing(self):
-        print(self.CANVAS_WIDTH, self.drawing.winfo_width(), self.CANVAS_HEIGHT, self.drawing.winfo_height() )
         if self.CANVAS_WIDTH != self.drawing.winfo_width() or self.CANVAS_HEIGHT != self.drawing.winfo_height():
             if self.CANVAS_WIDTH < 250:
                 self.CANVAS_WIDTH = 250
