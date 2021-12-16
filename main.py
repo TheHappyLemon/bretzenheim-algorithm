@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import colorchooser
 from enum import Enum
 import webbrowser
+import threading
 
 class Window(Enum):
     MAIN = -1
@@ -49,6 +50,7 @@ class App(tk.Tk):
         self.drawing.focus_force()
         self.windows[0] = self.drawing
         self.drawing.bind('<Escape>', self.open_main)
+        self.drawing.bind('<Motion>', self.on_mouse)
         self.drawing.protocol("WM_DELETE_WINDOW", self.quit)
         self.drawing.focus_force()
         self.drawing.geometry(str(self.CANVAS_WIDTH)+'x'+str( self.CANVAS_HEIGHT))
@@ -64,8 +66,8 @@ class App(tk.Tk):
         self.labels = [[],[]]
         self.pixels = []
         self.lines = []
+        self.bg_line = []
         self.draw_system()
-        self.bind_tree(self.drawing, '<Escape>', self.open_main)
 
 
     def open_settings(self):
@@ -190,15 +192,29 @@ class App(tk.Tk):
             self.deiconify()
         pass
 
+    def delete_shadow_line(self):
+        for px in self.bg_line:
+            self.canvas.delete(px)
+
+    def on_mouse(self, event):
+        if self.is_drawing:
+            self.delete_shadow_line()
+            self.draw_line(self.start_point[0],self.start_point[1], event.x, event.y,save_px = True)
 
     def callback(self, event):
-        if self.is_drawing:
-            self.pixels.append((self.start_point[0],self.start_point[1], event.x, event.y))
-            self.draw_line(self.start_point[0],self.start_point[1], event.x, event.y, '#ffffff')
-            self.is_drawing = False
-        else:
+        if not self.is_drawing:
             self.start_point = (event.x, event.y)
             self.is_drawing = True
+        else:
+            self.is_drawing = False
+            self.bg_line.clear()
+
+    def delete_widgets(self, system_only = False):
+        if system_only:
+            for line in self.lines:
+                self.canvas.delete(line)
+        else:
+            self.canvas.delete('all')
 
     def resize_drawing(self):
         if self.CANVAS_WIDTH != self.drawing.winfo_width() or self.CANVAS_HEIGHT != self.drawing.winfo_height():
@@ -206,7 +222,7 @@ class App(tk.Tk):
                 self.CANVAS_WIDTH = 250
             if self.CANVAS_HEIGHT < 250:
                 self.CANVAS_HEIGHT = 250
-            self.canvas.delete('all')
+            self.delete_widgets(system_only=True)
             self.draw_system()
             for px in self.pixels:
                 self.draw_line(px[0],px[1],px[2],px[3],self.OUTLINE)
@@ -231,7 +247,7 @@ class App(tk.Tk):
             self.lines.append(self.canvas.create_line(0,i * 100,self.CANVAS_WIDTH,i * 100,fill='light gray'))
 
 
-    def draw_line(self, x1, y1, x2, y2, color):
+    def draw_line(self, x1, y1, x2, y2,save_px = False):
         dx = abs(x2 - x1)
         dy = abs(y2 - y1)
         if x2 > x1:
@@ -253,7 +269,9 @@ class App(tk.Tk):
                     y = y + ys
                 else:
                     p = p + 2 * dy
-                self.canvas.create_rectangle(x, y, x , y + self.LINE_WIDTH, outline=self.OUTLINE)
+                px = self.canvas.create_rectangle(x, y, x , y + self.LINE_WIDTH, outline=self.OUTLINE)
+                if save_px:
+                    self.bg_line.append(px)
         else:
             p = 2 * dx - dy
             while y != y2:
@@ -263,8 +281,9 @@ class App(tk.Tk):
                     x = x + xs
                 else:
                     p = p + 2 * dx
-                self.canvas.create_rectangle(x, y, x + self.LINE_WIDTH , y, outline=self.OUTLINE)
-
+                px = self.canvas.create_rectangle(x, y, x + self.LINE_WIDTH , y, outline=self.OUTLINE)
+                if save_px:
+                    self.bg_line.append(px)
 
 if __name__ == '__main__':
     app = App()
