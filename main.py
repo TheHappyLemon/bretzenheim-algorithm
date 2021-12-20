@@ -198,7 +198,9 @@ class App(tk.Tk):
 
     def on_mouse(self, event):
         if self.is_drawing:
-            self.delete_shadow_line()
+            t = threading.Thread(target=self.delete_shadow_line())
+            t.start()
+            #self.delete_shadow_line()
             self.draw_line(self.start_point[0],self.start_point[1], event.x, event.y,save_px = True)
 
     def callback(self, event):
