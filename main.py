@@ -1,3 +1,4 @@
+import math
 import tkinter as tk
 from tkinter import colorchooser
 from enum import Enum
@@ -67,6 +68,10 @@ class App(tk.Tk):
         self.pixels = []
         self.lines = []
         self.bg_line = []
+        self.figure_type = 'circle'
+        self.figure_color = 'green'
+        self.figures = []
+        self.radius = 20
         self.draw_system()
 
 
@@ -192,6 +197,20 @@ class App(tk.Tk):
             self.deiconify()
         pass
 
+    def launch_figure(self, x0, y0, x1, y1):
+        id = self.canvas.create_oval(x0 - self.radius // 2, y0 - self.radius // 2, x0 + self.radius // 2, y0 + self.radius // 2, fill='green', outline='')
+        dir = self.get_norm_vector(x0, y0, x1, y1)
+        sign = 1
+        try:
+          while True:
+                self.canvas.move(id, dir[0] * 0.1 * sign, dir[1] * 0.1 * sign)
+                if abs(x1 - (self.canvas.coords(id)[0] + self.radius // 2))  <= 1 and abs(y1 - (self.canvas.coords(id)[1] + self.radius // 2)) <= 1 :
+                    x0, y0, x1, y1 = x1, y1, x0, y0
+                    sign = -sign
+        except:
+            print('lmmao who cares')
+            pass
+
     def delete_shadow_line(self):
         for px in self.bg_line:
             self.canvas.delete(px)
@@ -200,8 +219,11 @@ class App(tk.Tk):
         if self.is_drawing:
             t = threading.Thread(target=self.delete_shadow_line())
             t.start()
-            #self.delete_shadow_line()
             self.draw_line(self.start_point[0],self.start_point[1], event.x, event.y,save_px = True)
+
+    def get_norm_vector(self,x0,y0,x1,y1):
+        L = math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0)*(y1 - y0))
+        return ((x1 - x0) / L, (y1 - y0) / L)
 
     def callback(self, event):
         if not self.is_drawing:
@@ -210,6 +232,8 @@ class App(tk.Tk):
         else:
             self.is_drawing = False
             self.bg_line.clear()
+            thread = threading.Thread(target=self.launch_figure, args=(self.start_point[0], self.start_point[1], event.x, event.y))
+            thread.start()
 
     def delete_widgets(self, system_only = False):
         if system_only:
@@ -271,9 +295,11 @@ class App(tk.Tk):
                     y = y + ys
                 else:
                     p = p + 2 * dy
+
                 px = self.canvas.create_rectangle(x, y, x , y + self.LINE_WIDTH, outline=self.OUTLINE)
                 if save_px:
                     self.bg_line.append(px)
+
         else:
             p = 2 * dx - dy
             while y != y2:
