@@ -4,6 +4,7 @@ from tkinter import colorchooser
 from enum import Enum
 import webbrowser
 import threading
+from multiprocessing import Process
 
 class Window(Enum):
     MAIN = -1
@@ -201,15 +202,12 @@ class App(tk.Tk):
         id = self.canvas.create_oval(x0 - self.radius // 2, y0 - self.radius // 2, x0 + self.radius // 2, y0 + self.radius // 2, fill='green', outline='')
         dir = self.get_norm_vector(x0, y0, x1, y1)
         sign = 1
-        try:
-          while True:
-                self.canvas.move(id, dir[0] * 0.1 * sign, dir[1] * 0.1 * sign)
-                if abs(x1 - (self.canvas.coords(id)[0] + self.radius // 2))  <= 1 and abs(y1 - (self.canvas.coords(id)[1] + self.radius // 2)) <= 1 :
-                    x0, y0, x1, y1 = x1, y1, x0, y0
-                    sign = -sign
-        except:
-            print('lmmao who cares')
-            pass
+        while True:
+            self.canvas.move(id, dir[0] * 0.1 * sign, dir[1] * 0.1 * sign)
+            if abs(x1 - (self.canvas.coords(id)[0] + self.radius // 2))  <= 1 and abs(y1 - (self.canvas.coords(id)[1] + self.radius // 2)) <= 1 :
+                x0, y0, x1, y1 = x1, y1, x0, y0
+                sign = -sign
+
 
     def delete_shadow_line(self):
         for px in self.bg_line:
@@ -232,8 +230,10 @@ class App(tk.Tk):
         else:
             self.is_drawing = False
             self.bg_line.clear()
-            thread = threading.Thread(target=self.launch_figure, args=(self.start_point[0], self.start_point[1], event.x, event.y))
-            thread.start()
+            procces = Process(target=self.launch_figure, args=(self.start_point[0], self.start_point[1], event.x, event.y))
+            procces.start()
+            #thread = threading.Thread(target=self.launch_figure, args=(self.start_point[0], self.start_point[1], event.x, event.y))
+            #thread.start()
 
     def delete_widgets(self, system_only = False):
         if system_only:
@@ -255,7 +255,7 @@ class App(tk.Tk):
             self.drawing.geometry(str(self.CANVAS_WIDTH)+'x'+str(self.CANVAS_HEIGHT))
 
     def add_coord_label(self, x, y, text):
-        print('adding label to',x,y)
+
         label = tk.Label(self.canvas, text=text, bg='white',anchor='w')
         label.place(x=x,y=y)
         if y == 0:
@@ -314,5 +314,6 @@ class App(tk.Tk):
                     self.bg_line.append(px)
 
 if __name__ == '__main__':
+    print('a')
     app = App()
     app.mainloop()
