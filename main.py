@@ -88,7 +88,7 @@ class App(tk.Tk):
         self.LABEL_DISTANCE = 100
         self.canvas = tk.Canvas(self.drawing, bg='white', width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
         self.canvas.pack(fill="both", expand=True)
-        self.start_point = ()
+        self.start_point = []
         self.is_drawing = False
         self.OUTLINE = 'black'
         self.canvas.bind("<Button-1>", self.callback)
@@ -242,7 +242,6 @@ class App(tk.Tk):
 
     def on_mouse(self, event):
         if self.is_drawing:
-            print('ddd')
             #self.delete_shadow_line()
             t = threading.Thread(target=self.delete_shadow_line())
             t.start()
@@ -250,29 +249,48 @@ class App(tk.Tk):
 
     def callback(self, event):
         if not self.is_drawing:
-            self.start_point = (event.x, event.y)
+            self.start_point = [event.x, event.y]
             self.is_drawing = True
         else:
             self.is_drawing = False
             self.bg_line.clear()
+            self.end_point = [event.x, event.y]
+            if self.LINE_WIDTH > 4:
+                self.adjust_points()
             if self.figure_type == 'circle':
                 fig =  self.canvas.create_oval(self.start_point[0] - self.diameter // 2,
                                             self.start_point[1] - self.diameter // 2,
                                             self.start_point[0] + self.diameter // 2,
                                             self.start_point[1] + self.diameter // 2,
                                             fill=self.figure_color, outline='')
-                self.figures.append(Trajectory(self.start_point[0], self.start_point[1], event.x, event.y, fig, self.diameter))
+                self.figures.append(Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig, self.diameter))
             elif self.figure_type == 'square':
                 fig = self.canvas.create_rectangle(self.start_point[0] - self.diameter // 2,
                                               self.start_point[1] - self.diameter // 2,
                                               self.start_point[0] + self.diameter // 2,
                                               self.start_point[1] + self.diameter // 2,
                                               fill=self.figure_color, outline='')
-                self.figures.append(Trajectory(self.start_point[0], self.start_point[1], event.x, event.y, fig, self.diameter))
+                self.figures.append(Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig, self.diameter))
             if not self.thread.is_alive():
                 self.move_figures()
                 #print('starting thread!')
                 #self.thread.start()
+
+    def adjust_points(self):
+        # If line is too damn large, this will adjust trajectory`s start and end points, so
+        # figure will go in the middle of the line
+        print(self.start_point)
+        print(self.end_point)
+        dx = abs(self.end_point[0] - self.start_point[0])
+        dy = abs(self.end_point[1] - self.start_point[1])
+        if dx > dy:
+            self.start_point[1] += self.LINE_WIDTH / 2
+            self.end_point[1] += self.LINE_WIDTH / 2
+        else:
+            self.start_point[0] += self.LINE_WIDTH / 2
+            self.end_point[0] += self.LINE_WIDTH / 2
+        print(self.start_point)
+        print(self.end_point)
 
     def delete_widgets(self, system_only = False):
         if system_only:
@@ -310,6 +328,8 @@ class App(tk.Tk):
         for i in range(1,self.CANVAS_HEIGHT // self.LABEL_DISTANCE + 1):
             self.add_coord_label(x=0,y=i * 100 - 10,text=i * 100)
             self.lines.append(self.canvas.create_line(0,i * 100,self.CANVAS_WIDTH,i * 100,fill='light gray'))
+        for l in self.lines:
+            self.canvas.tag_lower(l)
 
 
     def draw_line(self, x1, y1, x2, y2,save_px = False):
@@ -348,7 +368,7 @@ class App(tk.Tk):
                     x = x + xs
                 else:
                     p = p + 2 * dx
-                px = self.canvas.create_rectangle(x, y, x + self.LINE_WIDTH , y, outline=self.OUTLINE)
+                px = self.canvas.create_rectangle(x, y, x + self.LINE_WIDTH, y , outline=self.OUTLINE)
                 if save_px:
                     self.bg_line.append(px)
 
