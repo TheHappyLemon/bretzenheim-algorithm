@@ -103,6 +103,7 @@ class App(tk.Tk):
         self.thread = threading.Thread(target=self.move_figures)
         self.diameter = 40
         self.draw_system()
+        self.move_figures()
 
 
     def open_settings(self):
@@ -230,11 +231,11 @@ class App(tk.Tk):
     def move_figures(self):
         #if not self.is_drawing:
             for figure in self.figures:
-                self.canvas.move(figure.id, figure.dir[0] * 0.1 * figure.sign, figure.dir[1] * 0.1 * figure.sign)
+                self.canvas.move(figure.id, figure.dir[0] * 0.5 * figure.sign, figure.dir[1] * 0.5 * figure.sign)
                 if figure.has_arrived(self.canvas.coords(figure.id)[0], self.canvas.coords(figure.id)[1]):
                     figure.sign = -figure.sign
                     figure.swap_points()
-            self.canvas.after(1, self.move_figures)
+            self.canvas.after(10, self.move_figures)
 
     def delete_shadow_line(self):
         for px in self.bg_line:
@@ -245,6 +246,7 @@ class App(tk.Tk):
             #self.delete_shadow_line()
             t = threading.Thread(target=self.delete_shadow_line())
             t.start()
+            #self.canvas.create_line(self.start_point[0],self.start_point[1], event.x, event.y)
             self.draw_line(self.start_point[0],self.start_point[1], event.x, event.y,save_px = True)
 
     def callback(self, event):
@@ -271,10 +273,7 @@ class App(tk.Tk):
                                               self.start_point[1] + self.diameter // 2,
                                               fill=self.figure_color, outline='')
                 self.figures.append(Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig, self.diameter))
-            if not self.thread.is_alive():
-                self.move_figures()
-                #print('starting thread!')
-                #self.thread.start()
+
 
     def adjust_points(self):
         # If line is too damn large, this will adjust trajectory`s start and end points, so
@@ -358,7 +357,6 @@ class App(tk.Tk):
                 px = self.canvas.create_rectangle(x, y, x , y + self.LINE_WIDTH, outline=self.OUTLINE)
                 if save_px:
                     self.bg_line.append(px)
-
         else:
             p = 2 * dx - dy
             while y != y2:
