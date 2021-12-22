@@ -228,15 +228,13 @@ class App(tk.Tk):
         pass
 
     def move_figures(self):
-        #TODO calculate position based on center not on top left corner
-        #TODO i hate threads!
-        while True:
+        #if not self.is_drawing:
             for figure in self.figures:
-                self.canvas.move(figure.id, figure.dir[0] * 1 * figure.sign, figure.dir[1] * 1 * figure.sign)
-                if  figure.has_arrived(self.canvas.coords(figure.id)[0], self.canvas.coords(figure.id)[1] ):
+                self.canvas.move(figure.id, figure.dir[0] * 0.1 * figure.sign, figure.dir[1] * 0.1 * figure.sign)
+                if figure.has_arrived(self.canvas.coords(figure.id)[0], self.canvas.coords(figure.id)[1]):
                     figure.sign = -figure.sign
                     figure.swap_points()
-
+            self.canvas.after(1, self.move_figures)
 
     def delete_shadow_line(self):
         for px in self.bg_line:
@@ -244,6 +242,8 @@ class App(tk.Tk):
 
     def on_mouse(self, event):
         if self.is_drawing:
+            print('ddd')
+            #self.delete_shadow_line()
             t = threading.Thread(target=self.delete_shadow_line())
             t.start()
             self.draw_line(self.start_point[0],self.start_point[1], event.x, event.y,save_px = True)
@@ -270,8 +270,9 @@ class App(tk.Tk):
                                               fill=self.figure_color, outline='')
                 self.figures.append(Trajectory(self.start_point[0], self.start_point[1], event.x, event.y, fig, self.diameter))
             if not self.thread.is_alive():
-                print('starting thread!')
-                self.thread.start()
+                self.move_figures()
+                #print('starting thread!')
+                #self.thread.start()
 
     def delete_widgets(self, system_only = False):
         if system_only:
