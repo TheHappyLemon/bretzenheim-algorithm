@@ -13,6 +13,29 @@ class Window(Enum):
     AUTHOR = 2
 
 
+class Trajectory:
+    # This trajectory should do the same trick both for circles, squares and maybe images
+    # x0, y0 - start point, x1, y1 - end point
+    def __init__(self, x0, y0, x1, y1, id):
+        print('aaaa',id)
+        self.x0 = x0
+        self.y0 = y0
+        self.x1 = x1
+        self.y1 = y1
+        self.id = id
+        self.sign = 1
+        self.dir = self.get_normalized_dir()
+
+    def get_normalized_dir(self):
+        L = math.sqrt((self.x1 - self.x0) * (self.x1 - self.x0) + (self.y1 - self.y0) * (self.y1 - self.y0))
+        return ((self.x1 - self.x0) / L, (self.y1 - self.y0) / L)
+
+    def swap_points(self):
+        self.x0, self.y0, self.x1, self.y1 = self.x1, self.y1, self.x0, self.y0
+
+    def __str__(self):
+        return f'x0 {self.x0} y0 {self.y0} x1 {self.x1} y1 {self.y1} id {self.id} sign {self.sign}'
+
 class App(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
@@ -71,8 +94,9 @@ class App(tk.Tk):
         self.bg_line = []
         self.figure_type = 'circle'
         self.figure_color = 'green'
-        self.figures = []
-        self.radius = 20
+        self.figures = [] # will store only trajectory class
+        self.thread = threading.Thread(target=self.move_figures)
+        self.diameter = 40
         self.draw_system()
 
 
@@ -198,15 +222,18 @@ class App(tk.Tk):
             self.deiconify()
         pass
 
-    def launch_figure(self, x0, y0, x1, y1):
-        id = self.canvas.create_oval(x0 - self.radius // 2, y0 - self.radius // 2, x0 + self.radius // 2, y0 + self.radius // 2, fill='green', outline='')
-        dir = self.get_norm_vector(x0, y0, x1, y1)
-        sign = 1
+    def move_figures(self):
+        #TODO calculate position based on center not on top left corner
+        #TODO i hate threads!
         while True:
-            self.canvas.move(id, dir[0] * 0.1 * sign, dir[1] * 0.1 * sign)
-            if abs(x1 - (self.canvas.coords(id)[0] + self.radius // 2))  <= 1 and abs(y1 - (self.canvas.coords(id)[1] + self.radius // 2)) <= 1 :
-                x0, y0, x1, y1 = x1, y1, x0, y0
-                sign = -sign
+            for figure in self.figures:
+                self.canvas.move(figure.id, figure.dir[0] * 0.1 * figure.sign, figure.dir[1] * 0.1 * figure.sign)
+                print(math.sqrt((figure.x1 - self.canvas.coords(figure.id)[0]) * (figure.x1 - self.canvas.coords(figure.id)[0]) +
+                                (figure.y1 - self.canvas.coords(figure.id)[1]) * (figure.y1 - self.canvas.coords(figure.id)[1])))
+                if  math.sqrt((figure.x1 - self.canvas.coords(figure.id)[0]) * (figure.x1 - self.canvas.coords(figure.id)[0]) +
+                              (figure.y1 - self.canvas.coords(figure.id)[1]) * (figure.y1 - self.canvas.coords(figure.id)[1])) < self.diameter:
+                    figure.sign = -figure.sign
+                    figure.swap_points()
 
 
     def delete_shadow_line(self):
@@ -219,10 +246,6 @@ class App(tk.Tk):
             t.start()
             self.draw_line(self.start_point[0],self.start_point[1], event.x, event.y,save_px = True)
 
-    def get_norm_vector(self,x0,y0,x1,y1):
-        L = math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0)*(y1 - y0))
-        return ((x1 - x0) / L, (y1 - y0) / L)
-
     def callback(self, event):
         if not self.is_drawing:
             self.start_point = (event.x, event.y)
@@ -230,10 +253,19 @@ class App(tk.Tk):
         else:
             self.is_drawing = False
             self.bg_line.clear()
-            procces = Process(target=self.launch_figure, args=(self.start_point[0], self.start_point[1], event.x, event.y))
-            procces.start()
-            #thread = threading.Thread(target=self.launch_figure, args=(self.start_point[0], self.start_point[1], event.x, event.y))
-            #thread.start()
+            if self.figure_type == 'circle':
+                self.figures.append(Trajectory(self.start_point[0],
+                                               self.start_point[1], event.x, event.y, self.canvas.create_oval(
+                                        self.start_point[0] - self.diameter // 2, self.start_point[1] - self.diameter // 2, self.start_point[0] + self.diameter // 2,
+                                        self.start_point[1] + self.diameter // 2, fill=self.figure_color, outline='')))
+                print(len(self.figures),'hereeeee')
+            elif self.figure_type == 'square':
+                self.figures.append(Trajectory(self.start_point[0],
+                                               self.start_point[1], event.x, event.y, self.canvas.create_rectangle(
+                        self.start_point[0], self.start_point[1], self.start_point[0] - self.diameter // 2,
+                        self.start_point[1] + self.diameter // 2, fill=self.figure_color, outline='')))
+            if not self.thread.is_alive():
+                self.thread.start()
 
     def delete_widgets(self, system_only = False):
         if system_only:
