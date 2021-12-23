@@ -17,7 +17,6 @@ class Trajectory:
     # This trajectory should do the same trick both for circles, squares and maybe images
     # x0, y0 - start point, x1, y1 - end point
     def __init__(self, x0, y0, x1, y1, id, diameter):
-        print('aaaa',id)
         self.x0 = x0
         self.y0 = y0
         self.x1 = x1
@@ -46,6 +45,7 @@ class App(tk.Tk):
         tk.Tk.__init__(self)
         pad = 30
         self.FONT = ('*font', 10)
+        self.OUTLINE = 'black'
         self.geometry('250x300')
         self.title('Main menu')
         self.resizable(False,False)
@@ -90,7 +90,6 @@ class App(tk.Tk):
         self.canvas.pack(fill="both", expand=True)
         self.start_point = []
         self.is_drawing = False
-        self.OUTLINE = 'black'
         self.canvas.bind("<Button-1>", self.callback)
         self.drawing.title('Object trajetory')
         self.labels = [[],[]]
@@ -100,9 +99,11 @@ class App(tk.Tk):
         self.figure_type = 'circle'
         self.figure_color = 'green'
         self.figures = [] # will store only trajectory class
-        self.thread = threading.Thread(target=self.move_figures)
+        self.my_grid = tk.PhotoImage(width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
+        self.canvas.create_image((self.CANVAS_WIDTH / 2, self.CANVAS_HEIGHT / 2), image=self.my_grid, state="normal")
         self.diameter = 40
         self.draw_system()
+        self.delete_shadow_line()
         self.move_figures()
 
 
@@ -164,6 +165,33 @@ class App(tk.Tk):
 
     def open_github(self, event):
         webbrowser.open_new("https://github.com/")
+
+    def rgbtohex(self, rgb:tuple):
+        res = ''
+        for n in rgb:
+            tmp = ''
+            if n == 0:
+                tmp = '00'
+            else:
+                while n  != 0:
+                    rem = n % 16
+                    n = n // 16
+                    if rem < 10:
+                        tmp += str(rem)
+                    elif rem == 10:
+                        tmp = 'a' + tmp
+                    elif rem == 11:
+                        tmp = 'b' + tmp
+                    elif rem == 12:
+                        tmp = 'c' + tmp
+                    elif rem == 13:
+                        tmp = 'd' + tmp
+                    elif rem == 14:
+                        tmp = 'e' + tmp
+                    elif rem == 15:
+                        tmp = 'f' + tmp
+            res += tmp
+        return res
 
     def pick_color(self) -> str:
         #  Returns none if window was closed using X
@@ -229,25 +257,29 @@ class App(tk.Tk):
         pass
 
     def move_figures(self):
-        #if not self.is_drawing:
+        if not self.is_drawing:
             for figure in self.figures:
                 self.canvas.move(figure.id, figure.dir[0] * 0.5 * figure.sign, figure.dir[1] * 0.5 * figure.sign)
                 if figure.has_arrived(self.canvas.coords(figure.id)[0], self.canvas.coords(figure.id)[1]):
                     figure.sign = -figure.sign
                     figure.swap_points()
-            self.canvas.after(10, self.move_figures)
+        self.canvas.after(10, self.move_figures)
 
     def delete_shadow_line(self):
         for px in self.bg_line:
-            self.canvas.delete(px)
+            # Yes this check look really dumb, BUT i am tired, because PhotoImage.put() doesnt accept hex strings
+            # as a color (I EVEN WROTE rgbtohex parser for some reason). I plan to draw figures not on image, but on
+            # the canvas specifically, and image can only consist of white and gray colours (coord. system)
+            if px[0] == (0,0,0):
+                c = 'white'
+            else:
+                c = 'gray'
+            self.my_grid.put(c,(px[1], px[2]))
 
     def on_mouse(self, event):
         if self.is_drawing:
-            #self.delete_shadow_line()
-            t = threading.Thread(target=self.delete_shadow_line())
-            t.start()
-            #self.canvas.create_line(self.start_point[0],self.start_point[1], event.x, event.y)
-            self.draw_line(self.start_point[0],self.start_point[1], event.x, event.y,save_px = True)
+            self.delete_shadow_line()
+            self.draw_line(self.start_point[0],self.start_point[1], event.x, event.y,color=self.OUTLINE, save_px = True)
 
     def callback(self, event):
         if not self.is_drawing:
@@ -257,8 +289,6 @@ class App(tk.Tk):
             self.is_drawing = False
             self.bg_line.clear()
             self.end_point = [event.x, event.y]
-            if self.LINE_WIDTH > 4:
-                self.adjust_points()
             if self.figure_type == 'circle':
                 fig =  self.canvas.create_oval(self.start_point[0] - self.diameter // 2,
                                             self.start_point[1] - self.diameter // 2,
@@ -275,21 +305,7 @@ class App(tk.Tk):
                 self.figures.append(Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig, self.diameter))
 
 
-    def adjust_points(self):
-        # If line is too damn large, this will adjust trajectory`s start and end points, so
-        # figure will go in the middle of the line
-        print(self.start_point)
-        print(self.end_point)
-        dx = abs(self.end_point[0] - self.start_point[0])
-        dy = abs(self.end_point[1] - self.start_point[1])
-        if dx > dy:
-            self.start_point[1] += self.LINE_WIDTH / 2
-            self.end_point[1] += self.LINE_WIDTH / 2
-        else:
-            self.start_point[0] += self.LINE_WIDTH / 2
-            self.end_point[0] += self.LINE_WIDTH / 2
-        print(self.start_point)
-        print(self.end_point)
+
 
     def delete_widgets(self, system_only = False):
         if system_only:
@@ -311,7 +327,6 @@ class App(tk.Tk):
             self.drawing.geometry(str(self.CANVAS_WIDTH)+'x'+str(self.CANVAS_HEIGHT))
 
     def add_coord_label(self, x, y, text):
-
         label = tk.Label(self.canvas, text=text, bg='white',anchor='w')
         label.place(x=x,y=y)
         if y == 0:
@@ -323,15 +338,13 @@ class App(tk.Tk):
         self.add_coord_label(0,0,'0')
         for i in range(1,self.CANVAS_WIDTH // self.LABEL_DISTANCE + 1):
             self.add_coord_label(x=i * 100 - 10,y=0,text=i * 100)
-            self.lines.append(self.canvas.create_line(i * 100,0,i * 100,self.CANVAS_HEIGHT,fill='light gray'))
+            self.draw_line(i * 100,0,i * 100,self.CANVAS_HEIGHT,color='gray')
         for i in range(1,self.CANVAS_HEIGHT // self.LABEL_DISTANCE + 1):
             self.add_coord_label(x=0,y=i * 100 - 10,text=i * 100)
-            self.lines.append(self.canvas.create_line(0,i * 100,self.CANVAS_WIDTH,i * 100,fill='light gray'))
-        for l in self.lines:
-            self.canvas.tag_lower(l)
+            self.draw_line(0,i * 100,self.CANVAS_WIDTH,i * 100,color='gray')
 
 
-    def draw_line(self, x1, y1, x2, y2,save_px = False):
+    def draw_line(self, x1, y1, x2, y2,  color, save_px = False):
         dx = abs(x2 - x1)
         dy = abs(y2 - y1)
         if x2 > x1:
@@ -353,10 +366,10 @@ class App(tk.Tk):
                     y = y + ys
                 else:
                     p = p + 2 * dy
-
-                px = self.canvas.create_rectangle(x, y, x , y + self.LINE_WIDTH, outline=self.OUTLINE)
                 if save_px:
-                    self.bg_line.append(px)
+                    c = (self.my_grid.get(x,y))
+                    self.bg_line.append((c, x, y))
+                self.my_grid.put(color, (x,y))
         else:
             p = 2 * dx - dy
             while y != y2:
@@ -366,11 +379,14 @@ class App(tk.Tk):
                     x = x + xs
                 else:
                     p = p + 2 * dx
-                px = self.canvas.create_rectangle(x, y, x + self.LINE_WIDTH, y , outline=self.OUTLINE)
                 if save_px:
-                    self.bg_line.append(px)
+                    c = (self.my_grid.get(x, y))
+                    self.bg_line.append((c, x, y))
+                self.my_grid.put(color, (x, y))
+
 
 if __name__ == '__main__':
-    print('a')
+
     app = App()
+    app.rgbtohex((255,0,0))
     app.mainloop()
