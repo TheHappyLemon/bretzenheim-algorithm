@@ -93,17 +93,14 @@ class App(tk.Tk):
         self.canvas.bind("<Button-1>", self.callback)
         self.drawing.title('Object trajetory')
         self.labels = [[],[]]
-        self.pixels = []
-        self.lines = []
-        self.bg_line = []
-        self.figure_type = 'circle'
+        self.bg_line = None
+        self.figure_type = 'square'
         self.figure_color = 'green'
         self.figures = [] # will store only trajectory class
         self.my_grid = tk.PhotoImage(width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
         self.canvas.create_image((self.CANVAS_WIDTH / 2, self.CANVAS_HEIGHT / 2), image=self.my_grid, state="normal")
         self.diameter = 40
         self.draw_system()
-        self.delete_shadow_line()
         self.move_figures()
 
 
@@ -265,21 +262,14 @@ class App(tk.Tk):
                     figure.swap_points()
         self.canvas.after(10, self.move_figures)
 
-    def delete_shadow_line(self):
-        for px in self.bg_line:
-            # Yes this check look really dumb, BUT i am tired, because PhotoImage.put() doesnt accept hex strings
-            # as a color (I EVEN WROTE rgbtohex parser for some reason). I plan to draw figures not on image, but on
-            # the canvas specifically, and image can only consist of white and gray colours (coord. system)
-            if px[0] == (0,0,0):
-                c = 'white'
-            else:
-                c = 'gray'
-            self.my_grid.put(c,(px[1], px[2]))
+    def delete_bg_line(self):
+        if self.bg_line is not None:
+            self.canvas.delete(self.bg_line)
 
     def on_mouse(self, event):
         if self.is_drawing:
-            self.delete_shadow_line()
-            self.draw_line(self.start_point[0],self.start_point[1], event.x, event.y,color=self.OUTLINE, save_px = True)
+            self.delete_bg_line()
+            self.bg_line = self.canvas.create_line(self.start_point[0],self.start_point[1], event.x, event.y,fill=self.OUTLINE)
 
     def callback(self, event):
         if not self.is_drawing:
@@ -287,8 +277,9 @@ class App(tk.Tk):
             self.is_drawing = True
         else:
             self.is_drawing = False
-            self.bg_line.clear()
             self.end_point = [event.x, event.y]
+            self.delete_bg_line()
+            self.draw_line(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], color=self.OUTLINE)
             if self.figure_type == 'circle':
                 fig =  self.canvas.create_oval(self.start_point[0] - self.diameter // 2,
                                             self.start_point[1] - self.diameter // 2,
@@ -301,7 +292,7 @@ class App(tk.Tk):
                                               self.start_point[1] - self.diameter // 2,
                                               self.start_point[0] + self.diameter // 2,
                                               self.start_point[1] + self.diameter // 2,
-                                              fill=self.figure_color, outline='')
+                                              fill=self.OUTLINE, outline='')
                 self.figures.append(Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig, self.diameter))
 
 
