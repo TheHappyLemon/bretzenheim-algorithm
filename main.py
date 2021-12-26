@@ -66,6 +66,9 @@ class App(tk.Tk):
         self.drawing_on = False
         self.LINE_WIDTH = 1
         self.cur_window = -1
+        self.own_drawing_points = []
+        self.figure_type = tk.IntVar(0) # 0 - circle, 1 - square, 2 - custom
+        self.figure_color = 'green'
         tmp = tk.Button(master=self, text='Quit', width=10, font=self.FONT)
         tmp.configure(command=self.quit)
         tmp.pack()
@@ -94,14 +97,59 @@ class App(tk.Tk):
         self.drawing.title('Object trajetory')
         self.labels = [[],[]]
         self.bg_line = None
-        self.figure_type = 'square'
-        self.figure_color = 'green'
         self.figures = [] # will store only trajectory class
         self.my_grid = tk.PhotoImage(width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
         self.canvas.create_image((self.CANVAS_WIDTH / 2, self.CANVAS_HEIGHT / 2), image=self.my_grid, state="normal")
         self.diameter = 40
         self.draw_system()
         self.move_figures()
+
+
+    def own_drawing_callback(self, event):
+        if self.was_drawn:
+            self.own_drawing_clear()
+            self.was_drawn = False
+        self.own_drawing_points.append((event.x, event.y))
+        self.tmp_circles.append(self.own_drawing_canvas.create_oval(event.x-3,event.y-3,event.x+3,event.y+3, fill = self.OUTLINE, outline=''))
+
+
+    def own_drawing_key(self, event = None):
+        if len(self.own_drawing_points) > 1:
+            for i in range(len(self.own_drawing_points) - 1):
+                self.draw_line(self.own_drawing_points[i][0], self.own_drawing_points[i][1],
+                              self.own_drawing_points[i + 1][0], self.own_drawing_points[i + 1][1], self.OUTLINE, alternative_grid=True)
+            self.draw_line(self.own_drawing_points[len(self.own_drawing_points) - 1][0],
+                           self.own_drawing_points[len(self.own_drawing_points) - 1][1],
+                           self.own_drawing_points[0][0], self.own_drawing_points[0][1], self.OUTLINE, alternative_grid=True) #connects first and last points
+            for circle in self.tmp_circles:
+                self.own_drawing_canvas.delete(circle)
+            self.was_drawn = True
+
+    def own_drawing_clear(self):
+        for circle in self.tmp_circles:
+            self.own_drawing_canvas.delete(circle)
+        self.my_grid_1 = tk.PhotoImage(width=200, height=200)
+        self.own_drawing_points.clear()
+        self.own_drawing_canvas.create_image((100, 100), image=self.my_grid_1, state="normal")
+
+    def figure_sel(self):
+        if self.figure_type.get() == 2:
+            self.own_drawing = tk.Toplevel(master = self.settings)
+            self.own_drawing.resizable(False,False)
+            self.own_drawing.geometry=('200x200')
+            self.own_drawing_canvas = tk.Canvas(master = self.own_drawing,bg='white',width = 200, height=200)
+            self.own_drawing_canvas.pack()
+            self.own_drawing_canvas.bind("<Button-1>", self.own_drawing_callback)
+            self.own_drawing.bind("<Return>", self.own_drawing_key)
+            frame = tk.Frame(master=self.own_drawing)
+            frame.pack()
+            tk.Button(master=frame, text='Draw <ENTER>', command=self.own_drawing_key, padx=5).grid(row = 0, column=0)
+            tk.Button(master=frame, text='Clear <ESC>', command=self.own_drawing_clear , padx=15).grid(row = 0, column=1)
+            self.my_grid_1 = tk.PhotoImage(width=200, height=200)
+            self.own_drawing_canvas.create_image((100, 100), image=self.my_grid_1, state="normal")
+            self.tmp_circles = []
+            self.own_drawing_key(None)
+            self.was_drawn = len(self.own_drawing_points) > 1
 
 
     def open_settings(self):
@@ -114,18 +162,17 @@ class App(tk.Tk):
         self.settings.geometry('300x320')
         self.settings.resizable(False, False)
         self.settings.protocol("WM_DELETE_WINDOW", self.quit_stg)
-        self.pck_btn = tk.Button(master=self.settings, text="Pick line's colour", font=self.FONT)
-        self.pck_btn.configure(command=self.pick_color)
-        self.pck_btn.pack(pady=30)
+        frame = tk.Frame(master=self.settings)
+        frame.pack(pady=30)
+        self.pck_line = tk.Button(master=frame, text="Pick line's colour", font=self.FONT, command= lambda : self.pick_color(0))
+        self.pck_line.grid(row=0, column=0, padx=10)
+        self.pck_fig = tk.Button(master=frame, text="Pick figure's colour", font=self.FONT, command= lambda : self.pick_color(1))
+        self.pck_fig.grid(row=0, column=1, padx=10)
         frame = tk.Frame(master=self.settings)
         frame.pack()
-        tk.Label(master=frame, text="Line`s width in pixels", padx=5,
-                 font=self.FONT).grid(row=0, column=0)
-        self.spinbox = tk.Spinbox(master=frame,validate="key",
-                                  validatecommand=(self.settings.register(self.validate),"%P", 1, 50,0), font=self.FONT)
-        self.spinbox.delete(0, "end")
-        self.spinbox.insert(0,self.LINE_WIDTH)
-        self.spinbox.grid(row=0,column=1)
+        tk.Radiobutton(master=frame, text='Circle',variable=self.figure_type, value=0, command = self.figure_sel).grid(row = 0, column = 0,padx = 10)
+        tk.Radiobutton(master=frame, text='Square',variable=self.figure_type, value=1, command = self.figure_sel).grid(row = 0, column = 1,padx = 10)
+        tk.Radiobutton(master=frame, text='Custom',variable=self.figure_type, value=2, command = self.figure_sel).grid(row = 0, column = 2,padx = 10)
         tk.Label(master=self.settings, text="Resize window:", font=self.FONT).pack(pady=30)
         frame = tk.Frame(master=self.settings)
         frame.pack()
@@ -163,40 +210,22 @@ class App(tk.Tk):
     def open_github(self, event):
         webbrowser.open_new("https://github.com/")
 
-    def rgbtohex(self, rgb:tuple):
-        res = ''
-        for n in rgb:
-            tmp = ''
-            if n == 0:
-                tmp = '00'
-            else:
-                while n  != 0:
-                    rem = n % 16
-                    n = n // 16
-                    if rem < 10:
-                        tmp += str(rem)
-                    elif rem == 10:
-                        tmp = 'a' + tmp
-                    elif rem == 11:
-                        tmp = 'b' + tmp
-                    elif rem == 12:
-                        tmp = 'c' + tmp
-                    elif rem == 13:
-                        tmp = 'd' + tmp
-                    elif rem == 14:
-                        tmp = 'e' + tmp
-                    elif rem == 15:
-                        tmp = 'f' + tmp
-            res += tmp
-        return res
 
-    def pick_color(self) -> str:
+    def pick_color(self, id) -> str:
         #  Returns none if window was closed using X
-        self.pck_btn["state"] = tk.DISABLED
-        colors = colorchooser.askcolor(title="Choose a fancy color!")
-        self.pck_btn["state"] = tk.NORMAL
+        if id == 0:
+            self.pck_line["state"] = tk.DISABLED
+            colors = colorchooser.askcolor(title="Choose a fancy color!")
+            self.pck_line["state"] = tk.NORMAL
+        else:
+            self.pck_fig["state"] = tk.DISABLED
+            colors = colorchooser.askcolor(title="Choose a fancy color!")
+            self.pck_fig["state"] = tk.NORMAL
         if colors[1] != None:
-            self.OUTLINE = colors[1]
+            if id == 0:
+                self.OUTLINE = colors[1]
+            else:
+                self.figure_color = colors[1]
         else:
             self.OUTLINE = 'black'
 
@@ -215,9 +244,7 @@ class App(tk.Tk):
         try:
             value = int(value)
             if value >= int(min_value) and value <= int(max_value):
-                if widget_num == '0':
-                    self.LINE_WIDTH = value
-                elif widget_num == '1':
+                if widget_num == '1':
                     self.CANVAS_WIDTH = value
                 elif widget_num == '2':
                     self.CANVAS_HEIGHT = value
@@ -280,21 +307,27 @@ class App(tk.Tk):
             self.end_point = [event.x, event.y]
             self.delete_bg_line()
             self.draw_line(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], color=self.OUTLINE)
-            if self.figure_type == 'circle':
+            if self.figure_type.get() == 0:
                 fig =  self.canvas.create_oval(self.start_point[0] - self.diameter // 2,
                                             self.start_point[1] - self.diameter // 2,
                                             self.start_point[0] + self.diameter // 2,
                                             self.start_point[1] + self.diameter // 2,
                                             fill=self.figure_color, outline='')
                 self.figures.append(Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig, self.diameter))
-            elif self.figure_type == 'square':
+            elif self.figure_type.get() == 1:
                 fig = self.canvas.create_rectangle(self.start_point[0] - self.diameter // 2,
                                               self.start_point[1] - self.diameter // 2,
                                               self.start_point[0] + self.diameter // 2,
                                               self.start_point[1] + self.diameter // 2,
-                                              fill=self.OUTLINE, outline='')
+                                              fill=self.figure_color, outline='')
                 self.figures.append(Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig, self.diameter))
-
+            elif self.figure_type.get() == 2:
+                # max_x and max_y are used to move figure closer to starting points if it was drawn to small
+                max_x = max([elem[0] for elem in self.own_drawing_points])
+                max_y = max([elem[1] for elem in self.own_drawing_points])
+                real_points = [(elem[0] - max_x // 2 + self.start_point[0], elem[1] - max_y // 2 + self.start_point[1]) for elem in self.own_drawing_points]
+                fig = self.canvas.create_polygon(real_points, outline=self.OUTLINE,fill=self.figure_color)
+                self.figures.append(Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig, max(max_x,max_y)))
 
 
 
@@ -335,7 +368,7 @@ class App(tk.Tk):
             self.draw_line(0,i * 100,self.CANVAS_WIDTH,i * 100,color='gray')
 
 
-    def draw_line(self, x1, y1, x2, y2,  color, save_px = False):
+    def draw_line(self, x1, y1, x2, y2,  color, alternative_grid = False):
         dx = abs(x2 - x1)
         dy = abs(y2 - y1)
         if x2 > x1:
@@ -357,10 +390,10 @@ class App(tk.Tk):
                     y = y + ys
                 else:
                     p = p + 2 * dy
-                if save_px:
-                    c = (self.my_grid.get(x,y))
-                    self.bg_line.append((c, x, y))
-                self.my_grid.put(color, (x,y))
+                if not alternative_grid:
+                    self.my_grid.put(color, (x, y))
+                else:
+                    self.my_grid_1.put(color, (x, y))
         else:
             p = 2 * dx - dy
             while y != y2:
@@ -370,14 +403,12 @@ class App(tk.Tk):
                     x = x + xs
                 else:
                     p = p + 2 * dx
-                if save_px:
-                    c = (self.my_grid.get(x, y))
-                    self.bg_line.append((c, x, y))
-                self.my_grid.put(color, (x, y))
+                if not alternative_grid:
+                    self.my_grid.put(color, (x, y))
+                else:
+                    self.my_grid_1.put(color, (x, y))
 
 
 if __name__ == '__main__':
-
     app = App()
-    app.rgbtohex((255,0,0))
     app.mainloop()
