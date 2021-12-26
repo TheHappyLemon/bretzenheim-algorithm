@@ -17,25 +17,24 @@ class Window(Enum):
 class Trajectory:
     # This trajectory should do the same trick both for circles, squares and maybe images
     # x0, y0 - start point, x1, y1 - end point
-    def __init__(self, x0, y0, x1, y1, id, diameter, diameter_2 = 0):
+    def __init__(self, x0, y0, x1, y1, id):
         self.x0 = x0
         self.y0 = y0
         self.x1 = x1
         self.y1 = y1
+        self.center_x = x0
+        self.center_y = y0
         self.id = id
         self.sign = 1
-        self.diameter = diameter
-        self.diameter_2 = diameter_2
         self.dir = self.get_normalized_dir()
 
+    def move(self, deltx, delty):
+        self.center_x += deltx
+        self.center_y += delty
 
     def has_arrived(self, x, y):
-        print(math.sqrt((self.x1 - (x + self.diameter // 2)) * (self.x1 - (x + self.diameter // 2)) +
-                         (self.y1 - (y + self.diameter // 2)) * (self.y1 - (y + self.diameter // 2))))
-        return math.sqrt((self.x1 - (x + self.diameter // 2)) * (self.x1 - (x + self.diameter // 2)) +
-                         (self.y1 - (y + self.diameter // 2)) * (self.y1 - (y + self.diameter // 2))) < self.diameter / 2 or \
-               math.sqrt((self.x1 - (x + self.diameter // 2)) * (self.x1 - (x + self.diameter // 2)) +
-                         (self.y1 - (y + self.diameter // 2)) * (self.y1 - (y + self.diameter // 2))) < self.diameter_2 / 2
+        return math.sqrt((self.x1 - self.center_x) * (self.x1 - self.center_x) +
+                         (self.y1 - self.center_y) * (self.y1 - self.center_y) ) < 1
 
     def get_normalized_dir(self):
         L = math.sqrt((self.x1 - self.x0) * (self.x1 - self.x0) + (self.y1 - self.y0) * (self.y1 - self.y0))
@@ -43,9 +42,6 @@ class Trajectory:
 
     def swap_points(self):
         self.x0, self.y0, self.x1, self.y1 = self.x1, self.y1, self.x0, self.y0
-
-    def __str__(self):
-        return f'x0 {self.x0} y0 {self.y0} x1 {self.x1} y1 {self.y1} id {self.id} sign {self.sign}'
 
 
 class App(tk.Tk):
@@ -278,7 +274,9 @@ class App(tk.Tk):
     def move_figures(self):
         if not self.is_drawing:
             for figure in self.figures:
+                print(figure.center_x, figure.center_y)
                 self.canvas.move(figure.id, figure.dir[0] * 0.5 * figure.sign, figure.dir[1] * 0.5 * figure.sign)
+                figure.move(figure.dir[0] * 0.5 * figure.sign, figure.dir[1] * 0.5 * figure.sign)
                 if figure.has_arrived(self.canvas.coords(figure.id)[0], self.canvas.coords(figure.id)[1]):
                     figure.sign = -figure.sign
                     figure.swap_points()
@@ -311,8 +309,7 @@ class App(tk.Tk):
                                               self.start_point[1] + self.diameter // 2,
                                               fill=self.figure_color, outline='')
                 self.figures.append(
-                    Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig,
-                               self.diameter))
+                    Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig))
             elif self.figure_type.get() == 1:
                 fig = self.canvas.create_rectangle(self.start_point[0] - self.diameter // 2,
                                                    self.start_point[1] - self.diameter // 2,
@@ -320,8 +317,7 @@ class App(tk.Tk):
                                                    self.start_point[1] + self.diameter // 2,
                                                    fill=self.figure_color, outline='')
                 self.figures.append(
-                    Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig,
-                               self.diameter))
+                    Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig))
             elif self.figure_type.get() == 2:
                 # max_x and max_y are used to move figure closer to starting points if it was drawn to small
                 if len(self.own_drawing_points) < 2:
@@ -330,19 +326,11 @@ class App(tk.Tk):
                 min_y = min([elem[1] for elem in self.own_drawing_points])
                 max_x = max([elem[0] for elem in self.own_drawing_points])
                 max_y = max([elem[1] for elem in self.own_drawing_points])
-                center_x = (max_x + min_x) // 2
-                center_y = (max_y + min_y) // 2
-                real_points = [(elem[0] - center_x + self.start_point[0], elem[1] - center_y + self.start_point[1])
+                real_points = [(elem[0] - (max_x + min_x) // 2 + self.start_point[0], elem[1] - (max_y + min_y) // 2 + self.start_point[1])
                                for elem in self.own_drawing_points]
-                radius = ( (max_x - center_x + self.start_point[0]) - (min_x - center_x + self.start_point[0])) / 2
-                print(radius)
-                radius_2 = ( (max_y - center_x + self.start_point[1]) - (min_y - center_x + self.start_point[1])) / 2
                 fig = self.canvas.create_polygon(real_points, outline=self.OUTLINE, fill=self.figure_color)
-                self.canvas.create_oval(min_x - center_x + self.start_point[0], min_y - center_y + self.start_point[1],
-                                        max_x - center_x + self.start_point[0], max_y - center_y + self.start_point[1])
                 self.figures.append(
-                    Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig,
-                               radius, radius_2))
+                    Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig))
 
     def delete_widgets(self):
         self.my_grid = tk.PhotoImage(width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
