@@ -114,7 +114,7 @@ class App(tk.Tk):
 
 
     def own_drawing_key(self, event = None):
-        if len(self.own_drawing_points) > 1:
+        if len(self.own_drawing_points) > 1 and not self.was_drawn:
             for i in range(len(self.own_drawing_points) - 1):
                 self.draw_line(self.own_drawing_points[i][0], self.own_drawing_points[i][1],
                               self.own_drawing_points[i + 1][0], self.own_drawing_points[i + 1][1], self.OUTLINE, alternative_grid=True)
@@ -128,8 +128,8 @@ class App(tk.Tk):
     def own_drawing_clear(self):
         for circle in self.tmp_circles:
             self.own_drawing_canvas.delete(circle)
-        self.my_grid_1 = tk.PhotoImage(width=200, height=200)
         self.own_drawing_points.clear()
+        self.my_grid_1 = tk.PhotoImage(width=200, height=200)
         self.own_drawing_canvas.create_image((100, 100), image=self.my_grid_1, state="normal")
 
     def figure_sel(self):
@@ -141,6 +141,7 @@ class App(tk.Tk):
             self.own_drawing_canvas.pack()
             self.own_drawing_canvas.bind("<Button-1>", self.own_drawing_callback)
             self.own_drawing.bind("<Return>", self.own_drawing_key)
+            self.own_drawing.bind("<Escape>", self.own_drawing_clear)
             frame = tk.Frame(master=self.own_drawing)
             frame.pack()
             tk.Button(master=frame, text='Draw <ENTER>', command=self.own_drawing_key, padx=5).grid(row = 0, column=0)
@@ -148,8 +149,9 @@ class App(tk.Tk):
             self.my_grid_1 = tk.PhotoImage(width=200, height=200)
             self.own_drawing_canvas.create_image((100, 100), image=self.my_grid_1, state="normal")
             self.tmp_circles = []
+            self.was_drawn = False
             self.own_drawing_key(None)
-            self.was_drawn = len(self.own_drawing_points) > 1
+
 
 
     def open_settings(self):
