@@ -69,6 +69,7 @@ class App(tk.Tk):
         self.own_drawing_points = []
         self.figure_type = tk.IntVar(0) # 0 - circle, 1 - square, 2 - custom
         self.figure_color = 'green'
+        self.question_mark = [(26, 38), (38, 19), (61, 17), (75, 30), (62, 48), (58, 70), (46, 70), (43, 48), (58, 34), (47, 27), (36, 41)]
         tmp = tk.Button(master=self, text='Quit', width=10, font=self.FONT)
         tmp.configure(command=self.quit)
         tmp.pack()
@@ -103,7 +104,6 @@ class App(tk.Tk):
         self.diameter = 40
         self.draw_system()
         self.move_figures()
-
 
     def own_drawing_callback(self, event):
         if self.was_drawn:
@@ -148,6 +148,8 @@ class App(tk.Tk):
             tk.Button(master=frame, text='Clear <ESC>', command=self.own_drawing_clear , padx=15).grid(row = 0, column=1)
             self.my_grid_1 = tk.PhotoImage(width=200, height=200)
             self.own_drawing_canvas.create_image((100, 100), image=self.my_grid_1, state="normal")
+            if self.own_drawing_points == self.question_mark:
+                self.own_drawing_points.clear()
             self.tmp_circles = []
             self.was_drawn = False
             self.own_drawing_key(None)
@@ -325,20 +327,23 @@ class App(tk.Tk):
                 self.figures.append(Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig, self.diameter))
             elif self.figure_type.get() == 2:
                 # max_x and max_y are used to move figure closer to starting points if it was drawn to small
+                if len(self.own_drawing_points) < 2:
+                    self.own_drawing_points = self.question_mark
                 max_x = max([elem[0] for elem in self.own_drawing_points])
                 max_y = max([elem[1] for elem in self.own_drawing_points])
-                real_points = [(elem[0] - max_x // 2 + self.start_point[0], elem[1] - max_y // 2 + self.start_point[1]) for elem in self.own_drawing_points]
-                fig = self.canvas.create_polygon(real_points, outline=self.OUTLINE,fill=self.figure_color)
-                self.figures.append(Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig, max(max_x,max_y)))
+                real_points = [(elem[0] - max_x // 2 + self.start_point[0], elem[1] - max_y // 2 + self.start_point[1])
+                               for elem in self.own_drawing_points]
+                fig = self.canvas.create_polygon(real_points, outline=self.OUTLINE, fill=self.figure_color)
+                self.figures.append(
+                    Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig,
+                               max(max_x, max_y)))
 
-
-
-    def delete_widgets(self, system_only = False):
-        if system_only:
-            for line in self.lines:
-                self.canvas.delete(line)
-        else:
-            self.canvas.delete('all')
+    def delete_widgets(self):
+        self.my_grid = tk.PhotoImage(width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
+        self.canvas.create_image((self.CANVAS_WIDTH / 2, self.CANVAS_HEIGHT / 2), image=self.my_grid, state="normal")
+        for fig in self.figures:
+            self.draw_line(fig.x0, fig.y0, fig.x1, fig.y1, self.OUTLINE)
+            self.canvas.lift(fig.id)
 
     def resize_drawing(self):
         if self.CANVAS_WIDTH != self.drawing.winfo_width() or self.CANVAS_HEIGHT != self.drawing.winfo_height():
@@ -346,11 +351,9 @@ class App(tk.Tk):
                 self.CANVAS_WIDTH = 250
             if self.CANVAS_HEIGHT < 250:
                 self.CANVAS_HEIGHT = 250
-            self.delete_widgets(system_only=True)
-            self.draw_system()
-            for px in self.pixels:
-                self.draw_line(px[0],px[1],px[2],px[3],self.OUTLINE)
+            self.delete_widgets()
             self.drawing.geometry(str(self.CANVAS_WIDTH)+'x'+str(self.CANVAS_HEIGHT))
+            self.draw_system()
 
     def add_coord_label(self, x, y, text):
         label = tk.Label(self.canvas, text=text, bg='white',anchor='w')
