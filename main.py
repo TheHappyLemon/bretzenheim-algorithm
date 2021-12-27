@@ -1,10 +1,8 @@
 import math
 import tkinter as tk
-from tkinter import colorchooser
-from enum import Enum
 import webbrowser
-import threading
-from multiprocessing import Process
+from enum import Enum
+from tkinter import colorchooser
 
 
 class Window(Enum):
@@ -34,11 +32,14 @@ class Trajectory:
 
     def has_arrived(self, x, y):
         return math.sqrt((self.x1 - self.center_x) * (self.x1 - self.center_x) +
-                         (self.y1 - self.center_y) * (self.y1 - self.center_y) ) < 1
+                         (self.y1 - self.center_y) * (self.y1 - self.center_y)) < 1
 
     def get_normalized_dir(self):
         L = math.sqrt((self.x1 - self.x0) * (self.x1 - self.x0) + (self.y1 - self.y0) * (self.y1 - self.y0))
-        return ((self.x1 - self.x0) / L, (self.y1 - self.y0) / L)
+        if L != 0:
+            return ((self.x1 - self.x0) / L, (self.y1 - self.y0) / L)
+        else:
+            return (0,0)
 
     def swap_points(self):
         self.x0, self.y0, self.x1, self.y1 = self.x1, self.y1, self.x0, self.y0
@@ -161,52 +162,50 @@ class App(tk.Tk):
             self.own_drawing_key(None)
 
     def open_settings(self, event=None):
-        self.withdraw()
-        if self.drawing is not None and self.drawing.winfo_exists():
+        print(self.settings)
+        if self.settings is None:
+            self.withdraw()
             self.settings = tk.Toplevel(master=self)
-        else:
-            print(self.drawing)
-            self.settings = tk.Toplevel(master=self.drawing)
-        self.cur_window = Window.SETTINGS
-        self.settings.focus_force()
-        self.settings.geometry('300x320')
-        self.settings.resizable(False, False)
-        self.settings.protocol("WM_DELETE_WINDOW", lambda: self.my_quit(self.settings))
-        frame = tk.Frame(master=self.settings)
-        frame.pack(pady=30)
-        self.pck_line = tk.Button(master=frame, text="Pick line's colour", font=self.FONT,
-                                  command=lambda: self.pick_color(0))
-        self.pck_line.grid(row=0, column=0, padx=10)
-        self.pck_fig = tk.Button(master=frame, text="Pick figure's colour", font=self.FONT,
-                                 command=lambda: self.pick_color(1))
-        self.pck_fig.grid(row=0, column=1, padx=10)
-        frame = tk.Frame(master=self.settings)
-        frame.pack()
-        tk.Radiobutton(master=frame, text='Circle', variable=self.figure_type, value=0, command=self.figure_sel).grid(
-            row=0, column=0, padx=10)
-        tk.Radiobutton(master=frame, text='Square', variable=self.figure_type, value=1, command=self.figure_sel).grid(
-            row=0, column=1, padx=10)
-        tk.Radiobutton(master=frame, text='Custom', variable=self.figure_type, value=2, command=self.figure_sel).grid(
-            row=0, column=2, padx=10)
-        tk.Label(master=self.settings, text="Resize window:", font=self.FONT).pack(pady=30)
-        frame = tk.Frame(master=self.settings)
-        frame.pack()
-        tk.Label(master=frame, text="width  (250 - " + str(self.winfo_screenwidth()) + ")", padx=5,
-                 font=self.FONT).grid(row=0, column=0)
-        tk.Label(master=frame, text="height (250 - " + str(self.winfo_screenheight()) + ")", padx=5,
-                 font=self.FONT).grid(row=1, column=0)
-        self.entr_W = tk.Entry(master=frame, validate="key", validatecommand=(self.settings.register(self.validate),
-                                                                              "%P", 1, self.winfo_screenwidth(), 1),
-                               font=self.FONT)
-        self.entr_W.insert('0', self.CANVAS_WIDTH)
-        self.entr_W.grid(row=0, column=1)
-        self.entr_H = tk.Entry(master=frame, validate='key', validatecommand=(self.settings.register(self.validate),
-                                                                              "%P", 1, self.winfo_screenheight(), 2),
-                               font=self.FONT)
-        self.entr_H.insert('0', self.CANVAS_HEIGHT)
-        self.entr_H.grid(row=1, column=1)
-        # This button is actually useless. I think it just makes user feel comnfortable
-        tk.Button(master=self.settings, text='Save', font=self.FONT).pack(pady=30)
+            self.cur_window = Window.SETTINGS
+            self.settings.focus_force()
+            self.settings.geometry('300x320')
+            self.settings.resizable(False, False)
+            self.settings.protocol("WM_DELETE_WINDOW", lambda: self.my_quit(self.settings))
+            frame = tk.Frame(master=self.settings)
+            frame.pack(pady=30)
+            self.pck_line = tk.Button(master=frame, text="Pick line's colour", font=self.FONT,
+                                      command=lambda: self.pick_color(0))
+            self.pck_line.grid(row=0, column=0, padx=10)
+            self.pck_fig = tk.Button(master=frame, text="Pick figure's colour", font=self.FONT,
+                                     command=lambda: self.pick_color(1))
+            self.pck_fig.grid(row=0, column=1, padx=10)
+            frame = tk.Frame(master=self.settings)
+            frame.pack()
+            tk.Radiobutton(master=frame, text='Circle', variable=self.figure_type, value=0, command=self.figure_sel).grid(
+                row=0, column=0, padx=10)
+            tk.Radiobutton(master=frame, text='Square', variable=self.figure_type, value=1, command=self.figure_sel).grid(
+                row=0, column=1, padx=10)
+            tk.Radiobutton(master=frame, text='Custom', variable=self.figure_type, value=2, command=self.figure_sel).grid(
+                row=0, column=2, padx=10)
+            tk.Label(master=self.settings, text="Resize window:", font=self.FONT).pack(pady=30)
+            frame = tk.Frame(master=self.settings)
+            frame.pack()
+            tk.Label(master=frame, text="width  (250 - " + str(self.winfo_screenwidth()) + ")", padx=5,
+                     font=self.FONT).grid(row=0, column=0)
+            tk.Label(master=frame, text="height (250 - " + str(self.winfo_screenheight()) + ")", padx=5,
+                     font=self.FONT).grid(row=1, column=0)
+            self.entr_W = tk.Entry(master=frame, validate="key", validatecommand=(self.settings.register(self.validate),
+                                                                                  "%P", 1, self.winfo_screenwidth(), 1),
+                                   font=self.FONT)
+            self.entr_W.insert('0', self.CANVAS_WIDTH)
+            self.entr_W.grid(row=0, column=1)
+            self.entr_H = tk.Entry(master=frame, validate='key', validatecommand=(self.settings.register(self.validate),
+                                                                                  "%P", 1, self.winfo_screenheight(), 2),
+                                   font=self.FONT)
+            self.entr_H.insert('0', self.CANVAS_HEIGHT)
+            self.entr_H.grid(row=1, column=1)
+            # This button is actually useless. I think it just makes user feel comnfortable
+            tk.Button(master=self.settings, text='Save', font=self.FONT).pack(pady=30)
 
     def open_author(self):
         self.withdraw()
@@ -216,7 +215,7 @@ class App(tk.Tk):
         self.cur_window = Window.AUTHOR
         self.author.geometry('200x200')
         self.author.resizable(False, False)
-        self.author.protocol("WM_DELETE_WINDOW", lambda : self.my_quit(self.author))
+        self.author.protocol("WM_DELETE_WINDOW", lambda: self.my_quit(self.author))
         link = tk.Label(self.author, text="https://github.com/", fg="blue", cursor="hand2")
         link.bind("<Button-1>", self.open_github)
         link.pack(pady=30)
@@ -241,15 +240,16 @@ class App(tk.Tk):
                 self.OUTLINE = colors[1]
             else:
                 self.figure_color = colors[1]
-        else:
-            self.OUTLINE = 'black'
 
     def my_quit(self, window):
         if window == self.settings and self.drawing is not None and self.drawing.winfo_exists():
             self.resize_drawing()
+            self.settings = None
         else:
             if window == self.drawing:
                 self.drawing = None
+            elif window == self.settings:
+                self.settings = None
             self.deiconify()
         window.destroy()
 
@@ -274,7 +274,6 @@ class App(tk.Tk):
     def move_figures(self):
         if not self.is_drawing:
             for figure in self.figures:
-                print(figure.center_x, figure.center_y)
                 self.canvas.move(figure.id, figure.dir[0] * 0.5 * figure.sign, figure.dir[1] * 0.5 * figure.sign)
                 figure.move(figure.dir[0] * 0.5 * figure.sign, figure.dir[1] * 0.5 * figure.sign)
                 if figure.has_arrived(self.canvas.coords(figure.id)[0], self.canvas.coords(figure.id)[1]):
@@ -326,7 +325,8 @@ class App(tk.Tk):
                 min_y = min([elem[1] for elem in self.own_drawing_points])
                 max_x = max([elem[0] for elem in self.own_drawing_points])
                 max_y = max([elem[1] for elem in self.own_drawing_points])
-                real_points = [(elem[0] - (max_x + min_x) // 2 + self.start_point[0], elem[1] - (max_y + min_y) // 2 + self.start_point[1])
+                real_points = [(elem[0] - (max_x + min_x) // 2 + self.start_point[0],
+                                elem[1] - (max_y + min_y) // 2 + self.start_point[1])
                                for elem in self.own_drawing_points]
                 fig = self.canvas.create_polygon(real_points, outline=self.OUTLINE, fill=self.figure_color)
                 self.figures.append(
