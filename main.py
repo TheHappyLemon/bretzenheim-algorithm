@@ -73,6 +73,7 @@ class App(tk.Tk):
         self.drawing_on = False
         self.LINE_WIDTH = 1
         self.cur_window = -1
+        self.diameter = 40
         self.own_drawing_points = []
         self.figure_type = tk.IntVar(0)  # 0 - circle, 1 - square, 2 - custom
         self.figure_color = 'green'
@@ -105,7 +106,6 @@ class App(tk.Tk):
         self.figures = []  # will store only trajectory class
         self.my_grid = tk.PhotoImage(width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
         self.canvas.create_image((self.CANVAS_WIDTH / 2, self.CANVAS_HEIGHT / 2), image=self.my_grid, state="normal")
-        self.diameter = 40
         self.draw_system()
         self.move_figures()
 
@@ -161,8 +161,10 @@ class App(tk.Tk):
             self.was_drawn = False
             self.own_drawing_key(None)
 
+    def set_diameter(self, value):
+        self.diameter = int(value)
+
     def open_settings(self, event=None):
-        print(self.settings)
         if self.settings is None:
             self.withdraw()
             self.settings = tk.Toplevel(master=self)
@@ -187,7 +189,11 @@ class App(tk.Tk):
                 row=0, column=1, padx=10)
             tk.Radiobutton(master=frame, text='Custom', variable=self.figure_type, value=2, command=self.figure_sel).grid(
                 row=0, column=2, padx=10)
-            tk.Label(master=self.settings, text="Resize window:", font=self.FONT).pack(pady=30)
+            self.scale = tk.Scale(frame, from_=10, to=100, orient=tk.HORIZONTAL, command = lambda x: self.set_diameter(x), length = 150)
+            self.scale.set(self.diameter)
+            self.scale.grid(row = 1, column=1, columnspan = 3)
+            tk.Label(master=frame, text="Diameter:", font=self.FONT).grid(row=1, column=0)
+            tk.Label(master=self.settings, text="Resize window:", font=self.FONT).pack(pady=15)
             frame = tk.Frame(master=self.settings)
             frame.pack()
             tk.Label(master=frame, text="width  (250 - " + str(self.winfo_screenwidth()) + ")", padx=5,
@@ -205,7 +211,7 @@ class App(tk.Tk):
             self.entr_H.insert('0', self.CANVAS_HEIGHT)
             self.entr_H.grid(row=1, column=1)
             # This button is actually useless. I think it just makes user feel comnfortable
-            tk.Button(master=self.settings, text='Save', font=self.FONT).pack(pady=30)
+            tk.Button(master=self.settings, text='Save', font=self.FONT).pack(pady=15)
 
     def open_author(self):
         self.withdraw()
@@ -216,14 +222,15 @@ class App(tk.Tk):
         self.author.geometry('200x200')
         self.author.resizable(False, False)
         self.author.protocol("WM_DELETE_WINDOW", lambda: self.my_quit(self.author))
-        link = tk.Label(self.author, text="https://github.com/", fg="blue", cursor="hand2")
+        link = tk.Label(self.author, text="https://github.com/TheHappyLemon/bretzenheim-algorithm/", fg="blue",
+                        cursor="hand2", wraplength=150)
         link.bind("<Button-1>", self.open_github)
         link.pack(pady=30)
         tk.Label(self.author, text="Link to this project's GitHub repository :)", wraplength=150,
                  justify="center").pack(padx=10)
 
     def open_github(self, event):
-        webbrowser.open_new("https://github.com/")
+        webbrowser.open_new("https://github.com/TheHappyLemon/bretzenheim-algorithm")
 
     def pick_color(self, id) -> str:
         #  Returns none if window was closed using X
