@@ -53,35 +53,27 @@ class App(tk.Tk):
         self.OUTLINE = 'black'
         self.geometry('250x300')
         self.title('Main menu')
+
         self.drawing = None
         self.settings = None
         self.resizable(False, False)
-        self.start_btn = tk.Button(master=self, text='Start', width=10, font=self.FONT)
-        self.start_btn.configure(command=self.action_33)
-        self.start_btn.pack(pady=pad)
-        self.stg_btn = tk.Button(master=self, text='Settings', width=10, font=self.FONT)
-        self.stg_btn.configure(command=self.open_settings)
-        self.stg_btn.pack()
-        self.author_btn = tk.Button(master=self, text='Author', width=10, font=self.FONT)
-        self.author_btn.configure(command=self.open_author)
-        self.author_btn.pack(pady=pad)
-        self.windows = [None, None, None]  # list to store all the windows in order to close them with ESC button
+        self.start_btn = tk.Button(master=self, text='Start', width=10, font=self.FONT, command = self.action_33).pack(pady=pad)
+        self.stg_btn = tk.Button(master=self, text='Settings', width=10, font=self.FONT, command=self.open_settings).pack()
+        self.author_btn = tk.Button(master=self, text='Author', width=10, font=self.FONT, command=self.open_author).pack(pady=pad)
         self.CANVAS_WIDTH = 850
         self.CANVAS_HEIGHT = 650
         self.MAX_WIDTH = self.CANVAS_WIDTH
         self.MAX_HEIGHT = self.CANVAS_HEIGHT
         self.drawing_on = False
-        self.LINE_WIDTH = 1
-        self.cur_window = -1
         self.diameter = 40
+        self.labels = []
         self.own_drawing_points = []
         self.figure_type = tk.IntVar(0)  # 0 - circle, 1 - square, 2 - custom
         self.figure_color = 'green'
         self.question_mark = [(26, 38), (38, 19), (61, 17), (75, 30), (62, 48), (58, 70), (46, 70), (43, 48), (58, 34),
                               (47, 27), (36, 41)]
-        tmp = tk.Button(master=self, text='Quit', width=10, font=self.FONT)
-        tmp.configure(command=self.quit)
-        tmp.pack()
+        tk.Button(master=self, text='Quit', width=10, font=self.FONT, command=self.quit).pack()
+
 
     def action_33(self):
         # action_33 was intented as an Easter egg to smth (at least I think so). However,
@@ -100,8 +92,7 @@ class App(tk.Tk):
         self.start_point = []
         self.is_drawing = False
         self.canvas.bind("<Button-1>", self.callback)
-        self.drawing.title('Object trajetory')
-        self.labels = [[], []]
+        self.drawing.title("bresenham's algorithm")
         self.bg_line = None
         self.figures = []  # will store only trajectory class
         self.my_grid = tk.PhotoImage(width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
@@ -168,7 +159,6 @@ class App(tk.Tk):
         if self.settings is None:
             self.withdraw()
             self.settings = tk.Toplevel(master=self)
-            self.cur_window = Window.SETTINGS
             self.settings.focus_force()
             self.settings.geometry('300x320')
             self.settings.resizable(False, False)
@@ -212,13 +202,13 @@ class App(tk.Tk):
             self.entr_H.grid(row=1, column=1)
             # This button is actually useless. I think it just makes user feel comnfortable
             tk.Button(master=self.settings, text='Save', font=self.FONT).pack(pady=15)
+        else:
+            self.settings.focus_force()
 
     def open_author(self):
         self.withdraw()
         self.author = tk.Toplevel(master=self)
         self.author.focus_force()
-        self.windows[2] = self.author
-        self.cur_window = Window.AUTHOR
         self.author.geometry('200x200')
         self.author.resizable(False, False)
         self.author.protocol("WM_DELETE_WINDOW", lambda: self.my_quit(self.author))
@@ -279,7 +269,7 @@ class App(tk.Tk):
             return False
 
     def move_figures(self):
-        if not self.is_drawing:
+        if not self.is_drawing and not (self.settings is not None):
             for figure in self.figures:
                 self.canvas.move(figure.id, figure.dir[0] * 0.5 * figure.sign, figure.dir[1] * 0.5 * figure.sign)
                 figure.move(figure.dir[0] * 0.5 * figure.sign, figure.dir[1] * 0.5 * figure.sign)
@@ -293,51 +283,56 @@ class App(tk.Tk):
             self.canvas.delete(self.bg_line)
 
     def on_mouse(self, event):
-        if self.is_drawing:
+        if self.is_drawing and not self.settings is not None:
             self.delete_bg_line()
             self.bg_line = self.canvas.create_line(self.start_point[0], self.start_point[1], event.x, event.y,
                                                    fill=self.OUTLINE)
-
-    def callback(self, event):
-        if not self.is_drawing:
-            self.start_point = [event.x, event.y]
-            self.is_drawing = True
         else:
             self.is_drawing = False
-            self.end_point = [event.x, event.y]
+            self.start_point.clear()
             self.delete_bg_line()
-            self.draw_line(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1],
-                           color=self.OUTLINE)
-            if self.figure_type.get() == 0:
-                fig = self.canvas.create_oval(self.start_point[0] - self.diameter // 2,
-                                              self.start_point[1] - self.diameter // 2,
-                                              self.start_point[0] + self.diameter // 2,
-                                              self.start_point[1] + self.diameter // 2,
-                                              fill=self.figure_color, outline='')
-                self.figures.append(
-                    Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig))
-            elif self.figure_type.get() == 1:
-                fig = self.canvas.create_rectangle(self.start_point[0] - self.diameter // 2,
-                                                   self.start_point[1] - self.diameter // 2,
-                                                   self.start_point[0] + self.diameter // 2,
-                                                   self.start_point[1] + self.diameter // 2,
-                                                   fill=self.figure_color, outline='')
-                self.figures.append(
-                    Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig))
-            elif self.figure_type.get() == 2:
-                # max_x and max_y are used to move figure closer to starting points if it was drawn to small
-                if len(self.own_drawing_points) < 2:
-                    self.own_drawing_points = self.question_mark
-                min_x = min([elem[0] for elem in self.own_drawing_points])
-                min_y = min([elem[1] for elem in self.own_drawing_points])
-                max_x = max([elem[0] for elem in self.own_drawing_points])
-                max_y = max([elem[1] for elem in self.own_drawing_points])
-                real_points = [(elem[0] - (max_x + min_x) // 2 + self.start_point[0],
-                                elem[1] - (max_y + min_y) // 2 + self.start_point[1])
-                               for elem in self.own_drawing_points]
-                fig = self.canvas.create_polygon(real_points, outline=self.OUTLINE, fill=self.figure_color)
-                self.figures.append(
-                    Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig))
+
+    def callback(self, event):
+        if not self.settings is not None:
+            if not self.is_drawing:
+                self.start_point = [event.x, event.y]
+                self.is_drawing = True
+            else:
+                self.is_drawing = False
+                self.end_point = [event.x, event.y]
+                self.delete_bg_line()
+                self.draw_line(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1],
+                               color=self.OUTLINE)
+                if self.figure_type.get() == 0:
+                    fig = self.canvas.create_oval(self.start_point[0] - self.diameter // 2,
+                                                  self.start_point[1] - self.diameter // 2,
+                                                  self.start_point[0] + self.diameter // 2,
+                                                  self.start_point[1] + self.diameter // 2,
+                                                  fill=self.figure_color, outline='')
+                    self.figures.append(
+                        Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig))
+                elif self.figure_type.get() == 1:
+                    fig = self.canvas.create_rectangle(self.start_point[0] - self.diameter // 2,
+                                                       self.start_point[1] - self.diameter // 2,
+                                                       self.start_point[0] + self.diameter // 2,
+                                                       self.start_point[1] + self.diameter // 2,
+                                                       fill=self.figure_color, outline='')
+                    self.figures.append(
+                        Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig))
+                elif self.figure_type.get() == 2:
+                    # max_x and max_y are used to move figure closer to starting points if it was drawn to small
+                    if len(self.own_drawing_points) < 2:
+                        self.own_drawing_points = self.question_mark
+                    min_x = min([elem[0] for elem in self.own_drawing_points])
+                    min_y = min([elem[1] for elem in self.own_drawing_points])
+                    max_x = max([elem[0] for elem in self.own_drawing_points])
+                    max_y = max([elem[1] for elem in self.own_drawing_points])
+                    real_points = [(elem[0] - (max_x + min_x) // 2 + self.start_point[0],
+                                    elem[1] - (max_y + min_y) // 2 + self.start_point[1])
+                                   for elem in self.own_drawing_points]
+                    fig = self.canvas.create_polygon(real_points, outline=self.OUTLINE, fill=self.figure_color)
+                    self.figures.append(
+                        Trajectory(self.start_point[0], self.start_point[1], self.end_point[0], self.end_point[1], fig))
 
     def delete_widgets(self):
         self.my_grid = tk.PhotoImage(width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
@@ -358,11 +353,9 @@ class App(tk.Tk):
 
     def add_coord_label(self, x, y, text):
         label = tk.Label(self.canvas, text=text, bg='white', anchor='w')
-        label.place(x=x, y=y)
-        if y == 0:
-            self.labels[0].append(label)
-        else:
-            self.labels[1].append(label)
+        if (x,y) not in self.labels:
+            label.place(x=x, y=y)
+            self.labels.append((x,y))
 
     def draw_system(self):
         self.add_coord_label(0, 0, '0')
