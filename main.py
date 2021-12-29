@@ -1,8 +1,8 @@
 from math import sqrt
 import tkinter as tk
-import webbrowser
+from webbrowser import  open_new
 from tkinter import colorchooser
-
+# For some reason tk.colorchooser raises error, so I have to import it separately.
 
 class Trajectory:
     # Class for moving center of each figure
@@ -220,7 +220,7 @@ class App(tk.Tk):
         self.author.protocol("WM_DELETE_WINDOW", lambda: self.my_quit(self.author))
         link = tk.Label(self.author, text="https://github.com/TheHappyLemon/bretzenheim-algorithm/", fg="blue",
                         cursor="hand2", wraplength=150)
-        link.bind("<Button-1>", lambda : webbrowser.open_new("https://github.com/TheHappyLemon/bretzenheim-algorithm"))
+        link.bind("<Button-1>", lambda x: webbrowser.open_new("https://github.com/TheHappyLemon/bretzenheim-algorithm"))
         link.pack(pady=30)
         tk.Label(self.author, text="Link to this project's GitHub repository :)", wraplength=150,
                  justify="center").pack(padx=10)
@@ -229,11 +229,11 @@ class App(tk.Tk):
         #  Returns choosen color from colorpicker menu
         if id == 0:
             self.pck_line["state"] = tk.DISABLED
-            colors = colorchooser.askcolor(title="Choose a fancy color!")
+            colors = tk.colorchooser.askcolor(title="Choose a fancy color!")
             self.pck_line["state"] = tk.NORMAL
         else:
             self.pck_fig["state"] = tk.DISABLED
-            colors = colorchooser.askcolor(title="Choose a fancy color!")
+            colors = tk.colorchooser.askcolor(title="Choose a fancy color!")
             self.pck_fig["state"] = tk.NORMAL
         if colors[1] != None:
             if id == 0:
@@ -251,6 +251,7 @@ class App(tk.Tk):
             # This is needed for future checks
             if window == self.drawing:
                 self.drawing = None
+                self.labels.clear()
             elif window == self.settings:
                 self.settings = None
             self.deiconify()
