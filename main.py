@@ -64,9 +64,9 @@ class App(tk.Tk):
         self.drawing_on = False
         self.diameter = 40
         self.labels = []
-        self.own_drawing_points = []
         self.figure_type = tk.IntVar(0)  # 0 - circle, 1 - square, 2 - custom
         self.figure_color = 'green'
+        self.own_drawing_points = []
         self.question_mark = [(26, 38), (38, 19), (61, 17), (75, 30), (62, 48), (58, 70), (46, 70), (43, 48), (58, 34),
                               (47, 27), (36, 41)]
         tk.Button(master=self, text='Quit', width=10, font=self.FONT, command=self.quit).pack()
@@ -220,7 +220,7 @@ class App(tk.Tk):
         self.author.protocol("WM_DELETE_WINDOW", lambda: self.my_quit(self.author))
         link = tk.Label(self.author, text="https://github.com/TheHappyLemon/bretzenheim-algorithm/", fg="blue",
                         cursor="hand2", wraplength=150)
-        link.bind("<Button-1>", lambda x: webbrowser.open_new("https://github.com/TheHappyLemon/bretzenheim-algorithm"))
+        link.bind("<Button-1>", lambda x: open_new("https://github.com/TheHappyLemon/bretzenheim-algorithm"))
         link.pack(pady=30)
         tk.Label(self.author, text="Link to this project's GitHub repository :)", wraplength=150,
                  justify="center").pack(padx=10)
@@ -334,7 +334,7 @@ class App(tk.Tk):
                 elif self.figure_type.get() == 2:
                     # max_x and max_y are used to move figure closer to starting points if it was drawn to small
                     if len(self.own_drawing_points) < 2:
-                        self.own_drawing_points = self.question_mark
+                        self.own_drawing_points = self.question_mark.copy()
                     min_x = min([elem[0] for elem in self.own_drawing_points])
                     min_y = min([elem[1] for elem in self.own_drawing_points])
                     max_x = max([elem[0] for elem in self.own_drawing_points])
